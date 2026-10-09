@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f3f8ff">
+  <title>SAHAYA | Learning for Everyone</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <a href="#" class="brand" aria-label="SAHAYA home">
+      <span class="brand-icon">S</span>
+      <span>SAHAYA<small>Learning for Everyone</small></span>
+    </a>
+    <span class="access-label">Accessible learning for every child</span>
+  </header>
+
+  <main>
+    <section id="welcome" class="welcome-section">
+      <div class="hero">
+        <div class="hero-text">
+          <span class="eyebrow">🌈 EVERY CHILD CAN LEARN</span>
+          <h1>Learn in your language.<br><span>Learn your way.</span></h1>
+          <p>
+            Every child learns differently. SAHAYA makes learning easier
+            with local languages, pictures, audio and accessible activities.
+          </p>
+          <button class="primary-button" id="getStarted">
+            Get Started <span aria-hidden="true">→</span>
+          </button>
+          <div class="trust-note">💙 Inclusive · Simple · Child-friendly</div>
+        </div>
+
+        <div class="hero-art" aria-label="Learning illustration">
+          <div class="sun"></div>
+          <div class="book">📚</div>
+          <div class="student-emoji">👧🏻</div>
+          <div class="floating-card card-one">🔊 Listen</div>
+          <div class="floating-card card-two">🌐 My language</div>
+          <div class="floating-card card-three">⭐ Let's learn!</div>
+        </div>
+      </div>
+
+      <div class="features">
+        <article class="feature-card">
+          <div class="feature-icon purple">🌐</div>
+          <h3>My Language</h3>
+          <p>Explore lessons in a preferred language.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon yellow">🔊</div>
+          <h3>Listen & See</h3>
+          <p>Learn through audio, pictures and text.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon green">👆</div>
+          <h3>Easy Interaction</h3>
+          <p>Answer using simple, accessible controls.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon pink">👩‍🏫</div>
+          <h3>Teacher Support</h3>
+          <p>Help teachers follow classroom participation.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="chooseRole" class="role-section hidden">
+      <button class="back-button" id="backHome">← Back to Home</button>
+      <div class="section-heading">
+        <span class="eyebrow">YOUR LEARNING JOURNEY</span>
+        <h2>Welcome to SAHAYA!</h2>
+        <p>Choose how you want to use the platform.</p>
+      </div>
+
+      <div class="role-cards">
+        <button class="role-card student-card" id="studentButton">
+          <span class="role-emoji">🧒</span>
+          <h3>I'm a Student</h3>
+          <p>Explore lessons, listen, see pictures and answer questions.</p>
+          <span class="role-link">Start Learning →</span>
+        </button>
+
+        <button class="role-card teacher-card" id="teacherButton">
+          <span class="role-emoji">👩‍🏫</span>
+          <h3>I'm a Teacher</h3>
+          <p>Explore a sample lesson and view a demo class dashboard.</p>
+          <span class="role-link">Open Teacher Space →</span>
+        </button>
+      </div>
+      <p class="demo-note">This is a prototype. No account is needed yet.</p>
+    </section>
+    <section id="studentPage" class="workspace hidden">
+  <button class="back-button" id="backStudentRole">
+    ← Choose another role
+  </button>
+
+  <div class="section-heading">
+    <span class="eyebrow">🌈 MY LEARNING ADVENTURE</span>
+    <h2 id="studentWelcome">Hello, Little Learner!</h2>
+    <p>Learn, explore, answer and celebrate your progress.</p>
+  </div>
+
+  <div class="learning-summary">
+    <div>
+      <span>⭐</span>
+      <div>
+        <strong id="starCount">0</strong>
+        <small>Stars earned</small>
+      </div>
+    </div>
+    <div>
+      <span>📚</span>
+      <div>
+        <strong id="questionProgress">0 / 3</strong>
+        <small>Questions answered correctly</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="lesson-panel">
+    <label for="languageSelect">🌐 Choose your language</label>
+    <select id="languageSelect">
+      <option value="en">English</option>
+      <option value="kn">ಕನ್ನಡ (Kannada)</option>
+      <option value="hi">हिन्दी (Hindi)</option>
+      <option value="ta">தமிழ் (Tamil)</option>
+      <option value="te">తెలుగు (Telugu)</option>
+    </select>
+
+    <div class="activity-tabs" role="group" aria-label="Choose a lesson">
+      <button class="activity-tab active" data-lesson="0">🌱 Plants</button>
+      <button class="activity-tab" data-lesson="1">🐾 Animals</button>
+      <button class="activity-tab" data-lesson="2">🍎 Healthy Food</button>
+    </div>
+
+    <article class="interactive-lesson">
+      <span class="lesson-badge" id="lessonBadge">LESSON 1 OF 3</span>
+
+      <div class="lesson-picture" id="lessonPicture" aria-hidden="true">
+        🌱
+      </div>
+
+      <h3 id="lessonTitle">Plants Need Water</h3>
+      <p id="lessonText">
+        Plants need water, sunlight and air to grow.
+      </p>
+
+      <button class="secondary-button" id="listenButton">
+        🔊 Listen to Lesson
+      </button>
+    </article>
+
+    <article class="quiz-card">
+      <span class="eyebrow">🧠 LET'S TRY!</span>
+      <h3 id="questionText">What helps a plant grow?</h3>
+      <p id="questionInstruction">Choose the correct answer.</p>
+
+      <div class="answer-options" id="answerOptions">
+        <button class="answer-button" data-answer="wrong">🪨 Stones</button>
+        <button class="answer-button" data-answer="correct">💧 Water</button>
+        <button class="answer-button" data-answer="wrong">🧸 Toys</button>
+      </div>
+<div class="voice-answer-area">
+  <button type="button" class="primary-button" id="voiceAnswerButton">
+    🎤 Speak Your Answer
+  </button>
+  <p id="voiceStatus" aria-live="polite">
+    Tap the microphone button and say your answer.
+  </p>
+</div>
+      <div id="answerFeedback" class="feedback" aria-live="polite"></div>
+
+      <button class="primary-button hidden" id="nextQuestion">
+        Next Activity →
+      </button>
+
+      <button class="secondary-button hidden" id="retryQuestion">
+        Try Again ↻
+      </button>
+    </article>
+
+    <div class="achievement-card hidden" id="achievementCard">
+      <div class="achievement-star">🏆</div>
+      <h3>Wonderful Work!</h3>
+      <p>You completed all three learning activities.</p>
+      <p id="finalStars"></p>
+      <button class="primary-button" id="restartLearning">
+        Learn Again ↻
+      </button>
+    </div>
+  </div>
+</section>
+     <section id="teacherPage" class="workspace hidden">
+      <button class="back-button" id="backTeacherRole">← Choose another role</button>
+      <div class="section-heading">
+        <span class="eyebrow">👩‍🏫 TEACHER SPACE</span>
+        <h2>Classroom Overview</h2>
+        <p>A sample dashboard showing how SAHAYA could support teachers.</p>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="stat-card">
+          <span>👧</span>
+          <p>Sample students</p>
+          <strong>12</strong>
+        </article>
+        <article class="stat-card">
+          <span>📖</span>
+          <p>Sample lessons</p>
+          <strong>4</strong>
+        </article>
+        <article class="stat-card">
+          <span>✅</span>
+          <p>Sample responses</p>
+          <strong>9</strong>
+        </article>
+      </div>
+
+      <div class="lesson-panel">
+        <h3>Sample lesson: Plants Need Water</h3>
+        <p>Participation overview (illustrative demo data)</p>
+        <div class="student-row"><span>Student A</span><span class="status completed">Answered</span></div>
+        <div class="student-row"><span>Student B</span><span class="status pending">Needs support</span></div>
+        <div class="student-row"><span>Student C</span><span class="status completed">Answered</span></div>
+        <p class="demo-note">These are sample values, not real student records.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>💙 SAHAYA — Learning without barriers.</p>
+    <p class="footer-small">Student-centred · Inclusive · Multilingual</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
