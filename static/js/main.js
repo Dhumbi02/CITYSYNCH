@@ -362,13 +362,22 @@ async function setupFaintMonitoringCamera() {
 
   try {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      faintStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480, facingMode: "user" } 
-      });
-      video.srcObject = faintStream;
+      // If already playing stream, keep it; else request video
+      if (!video.srcObject) {
+        faintStream = await navigator.mediaDevices.getUserMedia({ 
+          video: true 
+        });
+        video.srcObject = faintStream;
+      }
+      video.play().catch(e => console.log(e));
     }
   } catch (e) {
     console.log("Faint camera video access:", e);
+    // If permission or device busy, share gestureStream if active
+    if (gestureStream && !video.srcObject) {
+      video.srcObject = gestureStream;
+      video.play().catch(e => console.log(e));
+    }
   }
 
   start108PointMeshAnalysis();
@@ -382,158 +391,169 @@ function start108PointMeshAnalysis() {
 
   if (faintCheckInterval) clearInterval(faintCheckInterval);
 
+  // Offscreen buffer for fast pixel analysis
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = 48;
+  offCanvas.height = 36;
+  const oCtx = offCanvas.getContext('2d');
+
+  let prevRawPixels = null;
+  let standingBaselineY = null;
+  let baselineFrames = 0;
+
   // 30 FPS Live 108-Point Bio-Mesh Motion Analysis
   faintCheckInterval = setInterval(() => {
-    if (!video.videoWidth) return;
-    const w = skeletonCanvas.width = video.videoWidth || 440;
-    const h = skeletonCanvas.height = video.videoHeight || 320;
+    // If video not yet loaded, retry
+    const vw = video.videoWidth || video.clientWidth || 440;
+    const vh = video.videoHeight || video.clientHeight || 320;
+    if (vw <= 0) return;
 
-    sCtx.clearRect(0, 0, w, h);
+    skeletonCanvas.width = vw;
+    skeletonCanvas.height = vh;
+    sCtx.clearRect(0, 0, vw, vh);
 
-    // Compute optical grid with 108 anatomical mesh tracking nodes (12 cols x 9 rows = 108 landmarks)
+    // 108 Anatomical Landmarks (12 cols x 9 rows = 108 points)
     meshPoints108 = [];
     const cols = 12;
-    const rows = 9; 
-    const xStep = w / (cols + 1);
-    const yStep = h / (rows + 1);
+    const rows = 9;
+    const xStep = vw / (cols + 1);
+    const yStep = vh / (rows + 1);
 
-    // Sample video luminance dynamics for person presence
-    const offCanvas = document.createElement('canvas');
-    offCanvas.width = 48;
-    offCanvas.height = 36;
-    const oCtx = offCanvas.getContext('2d');
-    oCtx.drawImage(video, 0, 0, 48, 36);
+    // Draw video frame to small offscreen canvas
+    try {
+      oCtx.drawImage(video, 0, 0, 48, 36);
+    } catch(e) { return; }
+
     const pData = oCtx.getImageData(0, 0, 48, 36).data;
+
+    let totalDiff = 0;
+    if (prevRawPixels) {
+      for (let i = 0; i < pData.length; i += 8) {
+        totalDiff += Math.abs(pData[i] - prevRawPixels[i]) + Math.abs(pData[i+1] - prevRawPixels[i+1]);
+      }
+    }
 
     let activeNodes = 0;
     let sumY = 0;
     let sumX = 0;
-    let headNodesCount = 0;
     let headNodesY = 0;
-    let handLevelNodes = 0;
+    let headNodesCount = 0;
+    let chestHandNodes = 0;
 
     for (let r = 1; r <= rows; r++) {
       for (let c = 1; c <= cols; c++) {
         const ptX = c * xStep;
         const ptY = r * yStep;
 
-        const sampleX = Math.floor((ptX / w) * 48);
-        const sampleY = Math.floor((ptY / h) * 36);
-        const idx = (sampleY * 48 + sampleX) * 4;
-        const brightness = (pData[idx] + pData[idx + 1] + pData[idx + 2]) / 3;
+        const smX = Math.min(47, Math.max(0, Math.floor((ptX / vw) * 48)));
+        const smY = Math.min(35, Math.max(0, Math.floor((ptY / vh) * 36)));
+        const idx = (smY * 48 + smX) * 4;
+        const bright = (pData[idx] + pData[idx + 1] + pData[idx + 2]) / 3;
 
-        const isPersonBody = brightness > 28; 
-        if (isPersonBody) {
+        // Dynamic luminance or motion check for active node
+        const isAct = bright > 18; 
+        if (isAct) {
           activeNodes++;
           sumY += ptY;
           sumX += ptX;
 
-          // Head zone (Rows 1 to 3 of 108 mesh)
           if (r <= 3) {
             headNodesCount++;
             headNodesY += ptY;
-          }
-          // Mid-zone / Chest & Hand level (Rows 4 to 6 of 108 mesh)
-          if (r >= 4 && r <= 6) {
-            handLevelNodes++;
+          } else if (r <= 6) {
+            chestHandNodes++;
           }
         }
 
-        meshPoints108.push({
-          x: ptX,
-          y: ptY,
-          active: isPersonBody,
-          row: r,
-          col: c
-        });
+        meshPoints108.push({ x: ptX, y: ptY, active: isAct, row: r, col: c });
       }
     }
 
-    // Draw the 108-Point Live Anatomical Grid on canvas
-    sCtx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+    // Draw the 108 points with anatomical connecting mesh lines
+    sCtx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
     sCtx.lineWidth = 1;
 
-    // Connect mesh lines (horizontal & vertical)
     for (let i = 0; i < meshPoints108.length; i++) {
       const p = meshPoints108[i];
       sCtx.beginPath();
-      sCtx.arc(p.x, p.y, p.active ? (p.row <= 3 ? 4.5 : 3.5) : 1.5, 0, 2 * Math.PI);
-      
-      // Node colors based on body anatomy in 108-point model
+      sCtx.arc(p.x, p.y, p.active ? (p.row <= 3 ? 4 : 3) : 1.5, 0, 2 * Math.PI);
       if (p.active) {
-        if (p.row <= 3) sCtx.fillStyle = '#38bdf8'; // Head nodes (cyan)
-        else if (p.row <= 6) sCtx.fillStyle = '#10b981'; // Torso & Arms (green)
-        else sCtx.fillStyle = '#f59e0b'; // Lower body (amber)
+        sCtx.fillStyle = p.row <= 3 ? '#38bdf8' : (p.row <= 6 ? '#10b981' : '#f59e0b');
       } else {
-        sCtx.fillStyle = 'rgba(100, 116, 139, 0.35)';
+        sCtx.fillStyle = 'rgba(100, 116, 139, 0.3)';
       }
       sCtx.fill();
 
-      // Right neighbor connection
+      // Right connection
       if ((i + 1) % cols !== 0 && i + 1 < meshPoints108.length) {
-        const pRight = meshPoints108[i + 1];
-        if (p.active && pRight.active) {
+        const pR = meshPoints108[i + 1];
+        if (p.active && pR.active) {
           sCtx.beginPath();
           sCtx.moveTo(p.x, p.y);
-          sCtx.lineTo(pRight.x, pRight.y);
+          sCtx.lineTo(pR.x, pR.y);
           sCtx.stroke();
         }
       }
 
-      // Bottom neighbor connection
+      // Bottom connection
       if (i + cols < meshPoints108.length) {
-        const pBottom = meshPoints108[i + cols];
-        if (p.active && pBottom.active) {
+        const pB = meshPoints108[i + cols];
+        if (p.active && pB.active) {
           sCtx.beginPath();
           sCtx.moveTo(p.x, p.y);
-          sCtx.lineTo(pBottom.x, pBottom.y);
+          sCtx.lineTo(pB.x, pB.y);
           sCtx.stroke();
         }
       }
     }
 
     // ── KINEMATIC & UNUSUAL MOVEMENT DETECTIONS ACROSS 108 POINTS ──
-    if (activeNodes > 10) {
+    const statusBadge = document.getElementById('faint-mesh-status');
+    if (statusBadge) {
+      statusBadge.innerText = `108 Points Live (${activeNodes} Tracked)`;
+    }
+
+    if (activeNodes > 8) {
       const currentYCenter = sumY / activeNodes;
       const avgHeadY = headNodesCount > 0 ? (headNodesY / headNodesCount) : currentYCenter;
 
-      const statusBadge = document.getElementById('faint-mesh-status');
-      if (statusBadge) {
-        statusBadge.innerText = `108 Points Tracking (${activeNodes} Active Landmarks)`;
+      // Track standing baseline
+      if (baselineFrames < 15) {
+        standingBaselineY = currentYCenter;
+        baselineFrames++;
       }
 
       if (prevMeshYCenter !== null && prevHeadY !== null) {
         const verticalDrop = currentYCenter - prevMeshYCenter;
         const headDrop = avgHeadY - prevHeadY;
 
-        // 1. FALLING DOWN / FAINT DETECTION: Rapid downward collapse
-        if ((verticalDrop > 18 || headDrop > 22) && !isFaintAlarmActive) {
+        // 1. FALLING DOWN / FAINT COLLAPSE: Downward acceleration
+        if ((verticalDrop > 12 || headDrop > 14) && !isFaintAlarmActive) {
           suddenFallFrames++;
           if (suddenFallFrames >= 2) {
-            triggerSimulatedFaint('Falling Down / Sudden Collapse Detected by 108-Point Mesh');
+            triggerSimulatedFaint('Sudden Fall / Collapse Detected across 108 Points');
             suddenFallFrames = 0;
           }
         } else {
           suddenFallFrames = Math.max(0, suddenFallFrames - 1);
         }
 
-        // 2. HEAD ON HANDS / SLUMPING COLLAPSE: Head position drops down into hand level
-        if (headNodesCount > 0 && handLevelNodes > 12 && avgHeadY > (h * 0.48) && !isFaintAlarmActive) {
+        // 2. HEAD ON HANDS / SLUMPING: Head drops into chest/hand level
+        if (headNodesCount > 0 && avgHeadY > (vh * 0.42) && !isFaintAlarmActive) {
           headRestingOnHandsFrames++;
-          if (headRestingOnHandsFrames >= 5) { // Sustained head resting on hands / slumped
-            triggerSimulatedFaint('Head on Hands / Unconscious Slump Posture Detected');
+          if (headRestingOnHandsFrames >= 4) {
+            triggerSimulatedFaint('Head-on-Hands / Slumped Position Detected by 108-point Grid');
             headRestingOnHandsFrames = 0;
           }
         } else {
           headRestingOnHandsFrames = Math.max(0, headRestingOnHandsFrames - 1);
         }
 
-        // 3. UNUSUAL VIOLENT MOTION OF HANDS OR HEAD
-        const deltaSpeed = Math.abs(verticalDrop) + Math.abs(headDrop);
-        if (deltaSpeed > 35 && !isFaintAlarmActive) {
+        // 3. UNUSUAL MOTION OF HANDS OR HEAD: High rapid delta
+        if (totalDiff > 14000 && !isFaintAlarmActive) {
           violentMovementFrames++;
           if (violentMovementFrames >= 3) {
-            triggerSimulatedFaint('Unusual Convulsive Hand & Head Jerks Detected');
+            triggerSimulatedFaint('Unusual Rapid Hand/Head Motion Detected');
             violentMovementFrames = 0;
           }
         } else {
@@ -544,7 +564,9 @@ function start108PointMeshAnalysis() {
       prevMeshYCenter = currentYCenter;
       prevHeadY = avgHeadY;
     }
-  }, 100);
+
+    prevRawPixels = new Uint8ClampedArray(pData);
+  }, 90);
 }
 
 // LOUD HIGH-DECIBEL EMERGENCY BEEP SIREN OVER PHONE & BROWSER
@@ -1262,8 +1284,8 @@ function startRealtimeGestureLoop() {
           }
         }
 
-        // Active hand gesture presence
-        if (totalMoved > 45) {
+        // Active hand gesture presence (Responsive threshold: > 25 delta pixels)
+        if (totalMoved > 25) {
           const centroidX = sumX / totalMoved;
           const centroidY = sumY / totalMoved;
 
@@ -1272,29 +1294,29 @@ function startRealtimeGestureLoop() {
             const deltaY = centroidY - prevCentroidY;
             const areaScaleRatio = totalMoved / Math.max(prevMotionArea, 1);
 
-            // 1. PINCH / ZOOM OUT: Hand contracting or withdrawing from lens
-            if (areaScaleRatio < 0.62 && prevMotionArea > 90) {
+            // 1. PINCH / ZOOM OUT: Hand pulling back or contracting
+            if (areaScaleRatio < 0.72 && prevMotionArea > 50) {
               gestureCooldown = true;
               triggerManualGesture('pinch');
-              resetCooldown(400);
+              resetCooldown(350);
             }
             // 2. SPREAD / ZOOM IN: Hand advancing or spreading outward
-            else if (areaScaleRatio > 1.55 && totalMoved > 100) {
+            else if (areaScaleRatio > 1.38 && totalMoved > 55) {
               gestureCooldown = true;
               triggerManualGesture('zoom');
-              resetCooldown(400);
+              resetCooldown(350);
             }
             // 3. SWIPE RIGHT: Hand moving right across video
-            else if (deltaX > 4.5) {
+            else if (deltaX > 2.8) {
               gestureCooldown = true;
               triggerManualGesture('swipe-right');
-              resetCooldown(450);
+              resetCooldown(380);
             }
             // 4. SWIPE LEFT: Hand moving left across video
-            else if (deltaX < -4.5) {
+            else if (deltaX < -2.8) {
               gestureCooldown = true;
               triggerManualGesture('swipe-left');
-              resetCooldown(450);
+              resetCooldown(380);
             }
           }
 
