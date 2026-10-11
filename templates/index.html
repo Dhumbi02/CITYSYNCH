@@ -581,18 +581,24 @@
     </main>
   </div>
 
-  <!-- ULTRA-RESPONSIVE GESTURE HUD (WEBCAM WITH REAL-TIME PINCH/ZOOM & SWIPE) -->
+  <!-- ULTRA-RESPONSIVE GESTURE HUD (WEBCAM WITH REAL-TIME 108-POINT PINCH/ZOOM & SWIPE) -->
   <div class="gesture-hud" id="gesture-hud">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-      <span style="font-size: 12px; font-weight: 700; color: #38bdf8;">🖐️ High-Speed Gesture Engine</span>
+      <span style="font-size: 12px; font-weight: 700; color: #38bdf8;">🖐️ 108-Point Gesture Engine</span>
       <button onclick="toggleGestureControl()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px;">✖</button>
     </div>
-    <video id="gesture-video" autoplay playsinline muted></video>
+    <div style="position: relative; width: 100%; height: 160px; border-radius: 10px; overflow: hidden; background: #000;">
+      <video id="gesture-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+      <canvas id="gesture-skeleton-canvas" width="280" height="160" style="position: absolute; inset: 0; pointer-events: none; width: 100%; height: 100%;"></canvas>
+      <div style="position: absolute; top: 6px; left: 6px; background: rgba(15,23,42,0.85); border: 1px solid #10b981; padding: 2px 6px; border-radius: 6px; font-size: 10px; color: #10b981; font-family: monospace;">
+        🟢 108 Points Mesh Active
+      </div>
+    </div>
     <canvas id="gesture-canvas" width="160" height="120" style="display: none;"></canvas>
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px;">
       <span style="color: var(--text-muted);">Detected Action:</span>
-      <span id="detected-gesture" style="font-weight: 800; color: #10b981; font-size: 12px;">Monitoring...</span>
+      <span id="detected-gesture" style="font-weight: 800; color: #10b981; font-size: 12px;">Monitoring 108-Points...</span>
     </div>
 
     <!-- Quick Gesture Controls buttons for instant responsiveness -->

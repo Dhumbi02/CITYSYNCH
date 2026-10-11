@@ -340,7 +340,7 @@ function speakCurrentHealthProfile() {
 }
 
 // -------------------------------------------------------------------------
-// 3. 108-POINT BIO-MESH FAINT & UNUSUAL MOVEMENT DETECTION CAMERA
+// 3. 108-POINT BIO-MESH FAINT, HEAD-ON-HANDS & UNUSUAL KINETICS DETECTOR
 // -------------------------------------------------------------------------
 let faintCheckInterval = null;
 let audioCtx = null;
@@ -350,8 +350,11 @@ let audioAlarmInterval = null;
 // 108-point anatomical mesh coordinates state
 let meshPoints108 = [];
 let prevMeshYCenter = null;
-let prevHeadVelocity = 0;
-let unusualMovementScore = 0;
+let prevHeadY = null;
+let prevTorsoY = null;
+let headRestingOnHandsFrames = 0;
+let suddenFallFrames = 0;
+let violentMovementFrames = 0;
 
 async function setupFaintMonitoringCamera() {
   const video = document.getElementById('faint-video');
@@ -387,10 +390,10 @@ function start108PointMeshAnalysis() {
 
     sCtx.clearRect(0, 0, w, h);
 
-    // Compute optical grid with 108 anatomical mesh tracking nodes (12x9 grid = 108 points)
+    // Compute optical grid with 108 anatomical mesh tracking nodes (12 cols x 9 rows = 108 landmarks)
     meshPoints108 = [];
     const cols = 12;
-    const rows = 9; // 12 x 9 = 108 tracking landmarks
+    const rows = 9; 
     const xStep = w / (cols + 1);
     const yStep = h / (rows + 1);
 
@@ -405,44 +408,65 @@ function start108PointMeshAnalysis() {
     let activeNodes = 0;
     let sumY = 0;
     let sumX = 0;
+    let headNodesCount = 0;
+    let headNodesY = 0;
+    let handLevelNodes = 0;
 
     for (let r = 1; r <= rows; r++) {
       for (let c = 1; c <= cols; c++) {
         const ptX = c * xStep;
         const ptY = r * yStep;
 
-        // Sample nearby pixel delta in offscreen buffer
         const sampleX = Math.floor((ptX / w) * 48);
         const sampleY = Math.floor((ptY / h) * 36);
         const idx = (sampleY * 48 + sampleX) * 4;
         const brightness = (pData[idx] + pData[idx + 1] + pData[idx + 2]) / 3;
 
-        const isPersonBody = brightness > 30; // Foreground body presence
+        const isPersonBody = brightness > 28; 
         if (isPersonBody) {
           activeNodes++;
           sumY += ptY;
           sumX += ptX;
+
+          // Head zone (Rows 1 to 3 of 108 mesh)
+          if (r <= 3) {
+            headNodesCount++;
+            headNodesY += ptY;
+          }
+          // Mid-zone / Chest & Hand level (Rows 4 to 6 of 108 mesh)
+          if (r >= 4 && r <= 6) {
+            handLevelNodes++;
+          }
         }
 
         meshPoints108.push({
           x: ptX,
           y: ptY,
-          active: isPersonBody
+          active: isPersonBody,
+          row: r,
+          col: c
         });
       }
     }
 
     // Draw the 108-Point Live Anatomical Grid on canvas
-    sCtx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    sCtx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
     sCtx.lineWidth = 1;
 
     // Connect mesh lines (horizontal & vertical)
     for (let i = 0; i < meshPoints108.length; i++) {
       const p = meshPoints108[i];
-      // Draw 108 points
       sCtx.beginPath();
-      sCtx.arc(p.x, p.y, p.active ? 3.5 : 1.5, 0, 2 * Math.PI);
-      sCtx.fillStyle = p.active ? '#10b981' : 'rgba(100, 116, 139, 0.4)';
+      sCtx.arc(p.x, p.y, p.active ? (p.row <= 3 ? 4.5 : 3.5) : 1.5, 0, 2 * Math.PI);
+      
+      // Node colors based on body anatomy in 108-point model
+      if (p.active) {
+        if (p.row <= 3) sCtx.fillStyle = '#38bdf8'; // Head nodes (cyan)
+        else if (p.row <= 6) sCtx.fillStyle = '#10b981'; // Torso & Arms (green)
+        else sCtx.fillStyle = '#f59e0b'; // Lower body (amber)
+      } else {
+        sCtx.fillStyle = 'rgba(100, 116, 139, 0.35)';
+      }
       sCtx.fill();
 
       // Right neighbor connection
@@ -468,33 +492,62 @@ function start108PointMeshAnalysis() {
       }
     }
 
-    // Kinematic & Sudden Collapse Analysis across the 108 points
-    if (activeNodes > 15) {
+    // ── KINEMATIC & UNUSUAL MOVEMENT DETECTIONS ACROSS 108 POINTS ──
+    if (activeNodes > 10) {
       const currentYCenter = sumY / activeNodes;
+      const avgHeadY = headNodesCount > 0 ? (headNodesY / headNodesCount) : currentYCenter;
+
       const statusBadge = document.getElementById('faint-mesh-status');
       if (statusBadge) {
-        statusBadge.innerText = `108 Points (Tracking ${activeNodes} Active Nodes)`;
+        statusBadge.innerText = `108 Points Tracking (${activeNodes} Active Landmarks)`;
       }
 
-      if (prevMeshYCenter !== null) {
-        const dropSpeed = currentYCenter - prevMeshYCenter;
+      if (prevMeshYCenter !== null && prevHeadY !== null) {
+        const verticalDrop = currentYCenter - prevMeshYCenter;
+        const headDrop = avgHeadY - prevHeadY;
 
-        // Detect Unusual Kinetics: Rapid vertical acceleration downwards (>22px) or sudden violent movement
-        if (dropSpeed > 22 && !isFaintAlarmActive) {
-          unusualMovementScore += dropSpeed;
-          if (unusualMovementScore > 35) {
-            triggerSimulatedFaint('Sudden Collapse / Rapid Vertical Drop Detected across 108-point Mesh');
+        // 1. FALLING DOWN / FAINT DETECTION: Rapid downward collapse
+        if ((verticalDrop > 18 || headDrop > 22) && !isFaintAlarmActive) {
+          suddenFallFrames++;
+          if (suddenFallFrames >= 2) {
+            triggerSimulatedFaint('Falling Down / Sudden Collapse Detected by 108-Point Mesh');
+            suddenFallFrames = 0;
           }
         } else {
-          unusualMovementScore = Math.max(0, unusualMovementScore - 5);
+          suddenFallFrames = Math.max(0, suddenFallFrames - 1);
+        }
+
+        // 2. HEAD ON HANDS / SLUMPING COLLAPSE: Head position drops down into hand level
+        if (headNodesCount > 0 && handLevelNodes > 12 && avgHeadY > (h * 0.48) && !isFaintAlarmActive) {
+          headRestingOnHandsFrames++;
+          if (headRestingOnHandsFrames >= 5) { // Sustained head resting on hands / slumped
+            triggerSimulatedFaint('Head on Hands / Unconscious Slump Posture Detected');
+            headRestingOnHandsFrames = 0;
+          }
+        } else {
+          headRestingOnHandsFrames = Math.max(0, headRestingOnHandsFrames - 1);
+        }
+
+        // 3. UNUSUAL VIOLENT MOTION OF HANDS OR HEAD
+        const deltaSpeed = Math.abs(verticalDrop) + Math.abs(headDrop);
+        if (deltaSpeed > 35 && !isFaintAlarmActive) {
+          violentMovementFrames++;
+          if (violentMovementFrames >= 3) {
+            triggerSimulatedFaint('Unusual Convulsive Hand & Head Jerks Detected');
+            violentMovementFrames = 0;
+          }
+        } else {
+          violentMovementFrames = Math.max(0, violentMovementFrames - 1);
         }
       }
+
       prevMeshYCenter = currentYCenter;
+      prevHeadY = avgHeadY;
     }
   }, 100);
 }
 
-// LOUD HIGH-DECIBEL EMERGENCY BEEP SIREN
+// LOUD HIGH-DECIBEL EMERGENCY BEEP SIREN OVER PHONE & BROWSER
 function playEmergencyBeep() {
   try {
     if (!audioCtx) {
@@ -504,19 +557,19 @@ function playEmergencyBeep() {
       audioCtx.resume();
     }
 
-    // Multi-tone oscillating alert siren
-    const tones = [980, 1350, 1650, 1900];
-    tones.forEach((freq, idx) => {
+    // High piercing oscillating frequency alarm sequence
+    const freqs = [1050, 1450, 1850, 2200];
+    freqs.forEach((freq, idx) => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.15));
-      gain.gain.setValueAtTime(0.9, audioCtx.currentTime + (idx * 0.15));
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (idx * 0.15) + 0.14);
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.14));
+      gain.gain.setValueAtTime(0.95, audioCtx.currentTime + (idx * 0.14));
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (idx * 0.14) + 0.13);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
-      osc.start(audioCtx.currentTime + (idx * 0.15));
-      osc.stop(audioCtx.currentTime + (idx * 0.15) + 0.15);
+      osc.start(audioCtx.currentTime + (idx * 0.14));
+      osc.stop(audioCtx.currentTime + (idx * 0.14) + 0.14);
     });
   } catch (e) {
     console.log("Audio beep failed:", e);
@@ -530,7 +583,7 @@ function triggerSimulatedFaint(reason) {
   const overlay = document.getElementById('faint-alert-overlay');
   if (overlay) overlay.classList.add('show');
 
-  // Continuous high-pitch beep until dismissed
+  // Play audio siren continuously until user clicks dismiss
   playEmergencyBeep();
   if (audioAlarmInterval) clearInterval(audioAlarmInterval);
   audioAlarmInterval = setInterval(playEmergencyBeep, 800);
@@ -538,7 +591,7 @@ function triggerSimulatedFaint(reason) {
   const phone = currentUser ? (currentUser.phone || currentUser.emergency_contact) : '+91 98450 12345';
   const name = currentUser ? currentUser.name : 'Citizen User';
 
-  // Dispatch API alert beep & SMS notification to registered phone
+  // Dispatch API alert beep & SMS notification to registered phone number
   fetch('/api/faint-alert', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -550,19 +603,21 @@ function triggerSimulatedFaint(reason) {
     if (logBox) {
       const timeStr = new Date().toLocaleTimeString();
       logBox.innerHTML = `
-        <div style="color:#ef4444; font-weight:bold;">🚨 [${timeStr}] UNUSUAL MOTION DETECTED! (${reason})</div>
-        <div style="color:#38bdf8;">📲 Emergency Beep alert dispatched to registered phone: ${phone}</div>
-        <div style="color:#10b981;">🚑 CitySync Trauma Grid Auto-Notified for coordinates.</div>
+        <div style="color:#ef4444; font-weight:bold;">🚨 [${timeStr}] ALERT: ${reason}!</div>
+        <div style="color:#38bdf8;">📲 Emergency Beep alert transmitted over phone to: ${phone}</div>
+        <div style="color:#10b981;">🚑 CitySync Trauma Hub alerted with coordinates & medical vitals.</div>
       ` + logBox.innerHTML;
     }
 
-    speakText(`Emergency! Unusual motion or faint detected for ${name}. High decibel beep and SMS dispatched to ${phone}!`);
+    speakText(`Warning! Faint or collapse detected for ${name}. High decibel beep and SMS dispatched to ${phone}!`);
   });
 }
 
 function dismissFaintAlert() {
   isFaintAlarmActive = false;
-  unusualMovementScore = 0;
+  headRestingOnHandsFrames = 0;
+  suddenFallFrames = 0;
+  violentMovementFrames = 0;
   if (audioAlarmInterval) {
     clearInterval(audioAlarmInterval);
     audioAlarmInterval = null;
@@ -1093,32 +1148,51 @@ async function toggleGestureControl() {
 function triggerManualGesture(action) {
   const badge = document.getElementById('detected-gesture');
   if (action === 'swipe-right') {
-    badge.innerText = 'Next Screen ▶';
+    if (badge) badge.innerText = 'Next Screen ▶';
     let idx = SECTIONS.indexOf(currentSection);
     idx = (idx + 1) % SECTIONS.length;
     navigateSection(SECTIONS[idx]);
+    speakText(`Switching to ${SECTIONS[idx].replace('-', ' ')}`);
   } else if (action === 'swipe-left') {
-    badge.innerText = '◀ Prev Screen';
+    if (badge) badge.innerText = '◀ Prev Screen';
     let idx = SECTIONS.indexOf(currentSection);
     idx = (idx - 1 + SECTIONS.length) % SECTIONS.length;
     navigateSection(SECTIONS[idx]);
+    speakText(`Switching to ${SECTIONS[idx].replace('-', ' ')}`);
   } else if (action === 'zoom') {
-    badge.innerText = '🔍 Zoom In (+)';
-    if (currentSection === 'city-hospitals' && hospitalMap) hospitalMap.zoomIn();
-    else if (currentSection === 'city-flooding' && floodingMap) floodingMap.zoomIn();
+    if (badge) badge.innerText = '🔍 Zoom In (+)';
+    // If not currently on map section, auto-navigate to hospitals map first!
+    if (currentSection !== 'city-hospitals' && currentSection !== 'city-flooding') {
+      navigateSection('city-hospitals');
+    }
+    setTimeout(() => {
+      if (currentSection === 'city-hospitals' && hospitalMap) {
+        hospitalMap.setZoom(hospitalMap.getZoom() + 1);
+      } else if (currentSection === 'city-flooding' && floodingMap) {
+        floodingMap.setZoom(floodingMap.getZoom() + 1);
+      }
+    }, 100);
   } else if (action === 'pinch') {
-    badge.innerText = '🔍 Zoom Out (-)';
-    if (currentSection === 'city-hospitals' && hospitalMap) hospitalMap.zoomOut();
-    else if (currentSection === 'city-flooding' && floodingMap) floodingMap.zoomOut();
+    if (badge) badge.innerText = '🔍 Zoom Out (-)';
+    if (currentSection !== 'city-hospitals' && currentSection !== 'city-flooding') {
+      navigateSection('city-hospitals');
+    }
+    setTimeout(() => {
+      if (currentSection === 'city-hospitals' && hospitalMap) {
+        hospitalMap.setZoom(hospitalMap.getZoom() - 1);
+      } else if (currentSection === 'city-flooding' && floodingMap) {
+        floodingMap.setZoom(floodingMap.getZoom() - 1);
+      }
+    }, 100);
   }
 }
 
-// Optical Flow Vector Analysis (<80ms response time)
+// 108-POINT OPTICAL FLOW VECTOR GESTURE ENGINE
 function startRealtimeGestureLoop() {
   const video = document.getElementById('gesture-video');
-  const canvas = document.getElementById('gesture-canvas');
-  if (!video || !canvas) return;
-  const ctx = canvas.getContext('2d');
+  const skeletonCanvas = document.getElementById('gesture-skeleton-canvas');
+  if (!video || !skeletonCanvas) return;
+  const sCtx = skeletonCanvas.getContext('2d');
 
   let prevPixels = null;
   let prevCentroidX = null;
@@ -1128,26 +1202,59 @@ function startRealtimeGestureLoop() {
   function analyzeMotion() {
     if (!gestureActive) return;
 
-    if (video.videoWidth > 0 && !gestureCooldown) {
-      const gw = 96;
-      const gh = 72;
-      canvas.width = gw;
-      canvas.height = gh;
-      ctx.drawImage(video, 0, 0, gw, gh);
-      const currentPixels = ctx.getImageData(0, 0, gw, gh).data;
+    if (video.videoWidth > 0) {
+      const gw = skeletonCanvas.width = 280;
+      const gh = skeletonCanvas.height = 160;
+      sCtx.clearRect(0, 0, gw, gh);
 
-      if (prevPixels) {
+      // Render 108 points anatomical mesh on gesture viewfinder (12 cols x 9 rows = 108 points)
+      const gCols = 12;
+      const gRows = 9;
+      const gxStep = gw / (gCols + 1);
+      const gyStep = gh / (gRows + 1);
+
+      // Offscreen thumbnail for optical vector calculation
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = 56;
+      offCanvas.height = 32;
+      const oCtx = offCanvas.getContext('2d');
+      oCtx.drawImage(video, 0, 0, 56, 32);
+      const currentPixels = oCtx.getImageData(0, 0, 56, 32).data;
+
+      // Draw 108 points on gesture canvas
+      sCtx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      sCtx.lineWidth = 1;
+
+      let gActivePoints = 0;
+      for (let r = 1; r <= gRows; r++) {
+        for (let c = 1; c <= gCols; c++) {
+          const ptX = c * gxStep;
+          const ptY = r * gyStep;
+          const smX = Math.floor((ptX / gw) * 56);
+          const smY = Math.floor((ptY / gh) * 32);
+          const idx = (smY * 56 + smX) * 4;
+          const isAct = (currentPixels[idx] + currentPixels[idx+1] + currentPixels[idx+2]) / 3 > 35;
+          if (isAct) gActivePoints++;
+
+          sCtx.beginPath();
+          sCtx.arc(ptX, ptY, isAct ? 3 : 1.5, 0, 2 * Math.PI);
+          sCtx.fillStyle = isAct ? '#10b981' : 'rgba(100, 116, 139, 0.4)';
+          sCtx.fill();
+        }
+      }
+
+      if (prevPixels && !gestureCooldown) {
         let totalMoved = 0;
         let sumX = 0;
         let sumY = 0;
 
-        for (let y = 0; y < gh; y += 2) {
-          for (let x = 0; x < gw; x += 2) {
-            const idx = (y * gw + x) * 4;
+        for (let y = 0; y < 32; y++) {
+          for (let x = 0; x < 56; x++) {
+            const idx = (y * 56 + x) * 4;
             const diff = Math.abs(currentPixels[idx] - prevPixels[idx]) +
                          Math.abs(currentPixels[idx+1] - prevPixels[idx+1]) +
                          Math.abs(currentPixels[idx+2] - prevPixels[idx+2]);
-            if (diff > 50) {
+            if (diff > 40) {
               totalMoved++;
               sumX += x;
               sumY += y;
@@ -1155,35 +1262,36 @@ function startRealtimeGestureLoop() {
           }
         }
 
-        // When hand movement is present (> 65 delta points)
-        if (totalMoved > 65) {
+        // Active hand gesture presence
+        if (totalMoved > 45) {
           const centroidX = sumX / totalMoved;
           const centroidY = sumY / totalMoved;
 
           if (prevCentroidX !== null && prevMotionArea !== null) {
             const deltaX = centroidX - prevCentroidX;
+            const deltaY = centroidY - prevCentroidY;
             const areaScaleRatio = totalMoved / Math.max(prevMotionArea, 1);
 
-            // 1. ZOOM IN (Hand/fingers rapidly spreading outward or advancing toward lens)
-            if (areaScaleRatio > 1.65 && totalMoved > 180) {
-              gestureCooldown = true;
-              triggerManualGesture('zoom');
-              resetCooldown(400);
-            }
-            // 2. PINCH / ZOOM OUT (Hand contracting or pulling back from lens)
-            else if (areaScaleRatio < 0.55 && prevMotionArea > 200) {
+            // 1. PINCH / ZOOM OUT: Hand contracting or withdrawing from lens
+            if (areaScaleRatio < 0.62 && prevMotionArea > 90) {
               gestureCooldown = true;
               triggerManualGesture('pinch');
               resetCooldown(400);
             }
-            // 3. FAST SWIPE RIGHT (Hand motion toward right on mirrored camera -> Next tab)
-            else if (deltaX > 9) {
+            // 2. SPREAD / ZOOM IN: Hand advancing or spreading outward
+            else if (areaScaleRatio > 1.55 && totalMoved > 100) {
+              gestureCooldown = true;
+              triggerManualGesture('zoom');
+              resetCooldown(400);
+            }
+            // 3. SWIPE RIGHT: Hand moving right across video
+            else if (deltaX > 4.5) {
               gestureCooldown = true;
               triggerManualGesture('swipe-right');
               resetCooldown(450);
             }
-            // 4. FAST SWIPE LEFT (Hand motion toward left on mirrored camera -> Prev tab)
-            else if (deltaX < -9) {
+            // 4. SWIPE LEFT: Hand moving left across video
+            else if (deltaX < -4.5) {
               gestureCooldown = true;
               triggerManualGesture('swipe-left');
               resetCooldown(450);
@@ -1208,7 +1316,7 @@ function startRealtimeGestureLoop() {
     setTimeout(() => {
       gestureCooldown = false;
       const b = document.getElementById('detected-gesture');
-      if (b) b.innerText = 'Tracking...';
+      if (b) b.innerText = 'Monitoring 108-Points...';
     }, ms);
   }
 

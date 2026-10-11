@@ -38,5 +38,33 @@
     "doctor": "Dr. Ramesh Patil",
     "emergency_contact": "+91 98450 12345",
     "notes": "Follow low-sodium diet and daily morning brisk walk."
+  },
+  {
+    "id": "USR-102",
+    "name": "sanutha",
+    "email": "8660169573@citysync.gov",
+    "phone": "8660169573",
+    "password": "123456",
+    "age": 28,
+    "gender": "Female",
+    "blood_group": "O+",
+    "condition": "Hypertension & Migraine",
+    "vitals": {
+      "bp": "120/80",
+      "pulse": "72 bpm",
+      "spo2": "99%",
+      "temp": "98.6 F"
+    },
+    "medicines": [
+      {
+        "name": "Amlodipine 5mg (08:00 AM)",
+        "time": "08:30 AM",
+        "dosage": "1 tablet",
+        "taken": false
+      }
+    ],
+    "doctor": "Dr. Ramesh Patil (Gokak PHC)",
+    "emergency_contact": "8660169573",
+    "notes": "Patient self-registered profile in CitySync Home Health Portal."
   }
 ]
