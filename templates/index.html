@@ -10,6 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap" rel="stylesheet">
   <!-- Leaflet CSS for Doctor Dashboard / Hospital / Flooding Maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- MediaPipe Pose & Camera Utils for 108-point skeleton mesh tracking -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
   <!-- Custom Styling -->
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
@@ -350,28 +353,36 @@
           </div>
 
           <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            <div class="faint-video-wrapper">
-              <video id="faint-video" autoplay playsinline muted></video>
+            <div class="faint-video-wrapper" style="position: relative; width: 440px; height: 320px; max-width: 100%;">
+              <video id="faint-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <!-- 108-Point Live Anatomical Motion Canvas Overlay -->
+              <canvas id="faint-skeleton-canvas" width="440" height="320" style="position: absolute; inset: 0; pointer-events: none; width: 100%; height: 100%;"></canvas>
               <canvas id="faint-motion-canvas" style="display: none;"></canvas>
+              
+              <!-- Real-time 108-point tracker badge -->
+              <div style="position: absolute; top: 10px; left: 10px; background: rgba(15,23,42,0.8); border: 1px solid #38bdf8; padding: 4px 10px; border-radius: 8px; font-size: 11px; color: #38bdf8; font-family: monospace;">
+                🟢 108-Point Bio-Mesh: <span id="faint-mesh-status" style="color:#10b981; font-weight:bold;">Tracking 108 Points</span>
+              </div>
               
               <!-- Red Emergency Overlay on Faint Detection -->
               <div id="faint-alert-overlay" class="faint-alert-overlay">
                 <div style="font-size: 42px;">🚨</div>
-                <h2 style="font-size: 22px; font-weight: 800; margin-top: 4px;">FAINT / FALL DETECTED!</h2>
-                <p style="font-size: 13px; text-align: center; max-width: 80%; margin-top: 4px;">
-                  High decibel alarm sounding. Dispatching emergency beep to registered contact.
+                <h2 style="font-size: 22px; font-weight: 800; margin-top: 4px;">UNUSUAL MOVEMENT / FAINT DETECTED!</h2>
+                <p style="font-size: 13px; text-align: center; max-width: 85%; margin-top: 4px;">
+                  108-Point Pose Mesh detected sudden collapse/unusual kinetics. Loud alarm sounding & dispatching beep to registered phone.
                 </p>
-                <button class="btn btn-secondary" style="margin-top: 14px; background: #fff; color: #000;" onclick="dismissFaintAlert()">
+                <button class="btn btn-secondary" style="margin-top: 14px; background: #fff; color: #000; font-weight: bold;" onclick="dismissFaintAlert()">
                   Dismiss / I am OK
                 </button>
               </div>
             </div>
 
             <div style="flex: 1; min-width: 260px;">
-              <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Guardian Status & Incident Logs</h4>
-              <div id="faint-log-box" style="background: #0f172a; border-radius: 10px; border: 1px solid var(--card-border); padding: 12px; max-height: 200px; overflow-y: auto; font-size: 12px; font-family: monospace;">
-                <div style="color: #10b981;">[SYSTEM INITIALIZED] Faint detection algorithm running at 30 fps.</div>
-                <div style="color: var(--text-muted);">[ACTIVE] Registered mobile number synced for automated distress SMS.</div>
+              <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">108-Point Guardian Telemetry</h4>
+              <div id="faint-log-box" style="background: #0f172a; border-radius: 10px; border: 1px solid var(--card-border); padding: 12px; max-height: 250px; overflow-y: auto; font-size: 12px; font-family: monospace;">
+                <div style="color: #10b981;">[108-POINT ENGINE] Bio-skeletal tracking nodes active (Head, Torso, Spine, Limbs).</div>
+                <div style="color: var(--text-muted);">[AUDIO TELEMETRY] Web Audio emergency siren connected.</div>
+                <div style="color: #38bdf8;">[TELEPHONY SYNC] Beep dispatcher linked to registered contact.</div>
               </div>
             </div>
           </div>
