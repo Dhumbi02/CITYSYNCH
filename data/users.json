@@ -1,0 +1,42 @@
+[
+  {
+    "id": "USR-101",
+    "name": "Ananya Rao",
+    "email": "ananya@citysync.gov",
+    "phone": "+91 98450 12345",
+    "password": "password123",
+    "age": 34,
+    "gender": "Female",
+    "blood_group": "B+",
+    "condition": "Hypertension & Migraine",
+    "vitals": {
+      "bp": "130/85",
+      "pulse": "74 bpm",
+      "spo2": "98%",
+      "temp": "98.4 F"
+    },
+    "medicines": [
+      {
+        "name": "Amlodipine 5mg",
+        "time": "08:00 AM",
+        "dosage": "1 tablet",
+        "taken": true
+      },
+      {
+        "name": "Paracetamol 650mg",
+        "time": "02:00 PM",
+        "dosage": "As needed",
+        "taken": false
+      },
+      {
+        "name": "Multivitamin",
+        "time": "09:00 PM",
+        "dosage": "1 capsule",
+        "taken": false
+      }
+    ],
+    "doctor": "Dr. Ramesh Patil",
+    "emergency_contact": "+91 98450 12345",
+    "notes": "Follow low-sodium diet and daily morning brisk walk."
+  }
+]

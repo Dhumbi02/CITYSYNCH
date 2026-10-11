@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CitySync — Integrated Smart Urban & Health Ecosystem</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS for Doctor Dashboard / Hospital / Flooding Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- AUTHENTICATION / REGISTRATION & LOGIN MODAL -->
+  <div id="auth-modal">
+    <div class="auth-container">
+      <div style="font-size: 34px; margin-bottom: 6px;">🌐</div>
+      <h2 style="font-size: 24px; color: #fff; margin-bottom: 4px;">CitySync Gateway</h2>
+      <p style="font-size: 13px; color: var(--text-muted);">Unified Citizen Registration & Biometric Access</p>
+
+      <!-- Toggle: Register vs Login -->
+      <div class="auth-mode-toggle">
+        <button id="btn-toggle-login" class="auth-mode-btn active" onclick="switchMode('login')">
+          Existing User Login
+        </button>
+        <button id="btn-toggle-register" class="auth-mode-btn" onclick="switchMode('register')">
+          New Citizen Register
+        </button>
+      </div>
+
+      <!-- VIEW 1: REGISTRATION FORM -->
+      <div id="auth-view-register" style="display: none; text-align: left;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="reg-name" class="form-control" placeholder="e.g. Rahul Sharma" required>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number (For Beep Alerts) *</label>
+            <input type="tel" id="reg-phone" class="form-control" placeholder="+91 98765 43210" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Age & Gender</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="number" id="reg-age" class="form-control" placeholder="Age" value="28" style="width: 70px;">
+              <select id="reg-gender" class="form-control">
+                <option value="Female">Female</option>
+                <option value="Male" selected>Male</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Blood Group</label>
+            <select id="reg-blood" class="form-control">
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+" selected>B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Medical Condition / Health Focus</label>
+          <input type="text" id="reg-condition" class="form-control" placeholder="e.g. Chronic Asthma, Blood Sugar, General Fitness" value="Hypertension & Migraine">
+        </div>
+
+        <div class="form-group">
+          <label>Daily Prescription Medicine</label>
+          <input type="text" id="reg-meds" class="form-control" placeholder="e.g. Amlodipine 5mg (Morning), Paracetamol" value="Amlodipine 5mg (08:00 AM)">
+        </div>
+
+        <div class="form-group">
+          <label>Primary Consulting Doctor</label>
+          <input type="text" id="reg-doctor" class="form-control" placeholder="Doctor name" value="Dr. Ramesh Patil (Gokak PHC)">
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;" onclick="submitRegistration()">
+          <span>✅</span> Complete Registration & Proceed to Login
+        </button>
+      </div>
+
+      <!-- VIEW 2: LOGIN MODES (Face, Fingerprint, Password) -->
+      <div id="auth-view-login">
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" onclick="switchAuthTab('face')">
+            <span style="font-size: 16px;">📷</span> Face ID
+          </button>
+          <button class="auth-tab-btn" onclick="switchAuthTab('finger')">
+            <span style="font-size: 16px;">👆</span> Fingerprint
+          </button>
+          <button class="auth-tab-btn" onclick="switchAuthTab('password')">
+            <span style="font-size: 16px;">🔑</span> Password
+          </button>
+        </div>
+
+        <!-- Face Auth -->
+        <div id="tab-face" class="auth-content active">
+          <div class="face-scanner-box">
+            <video id="auth-video" class="face-video" autoplay playsinline muted></video>
+            <div class="scanner-laser"></div>
+          </div>
+          <div id="face-status" style="font-size: 12px; color: #38bdf8; margin-bottom: 12px;">Position your face in front of the lens</div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="performFaceAuth()">
+            <span>⚡</span> Scan Face & Enter
+          </button>
+        </div>
+
+        <!-- Fingerprint Auth -->
+        <div id="tab-finger" class="auth-content">
+          <div class="fingerprint-sensor" id="finger-btn" onclick="performFingerAuth()">
+            🧬
+          </div>
+          <div id="finger-status" style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Click or touch biometric sensor</div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="performFingerAuth()">
+            <span>👆</span> Scan Fingerprint
+          </button>
+        </div>
+
+        <!-- Password Auth -->
+        <div id="tab-password" class="auth-content">
+          <div class="form-group">
+            <label>Registered Mobile or Name</label>
+            <input type="text" id="pwd-user" value="Ananya Rao" class="form-control">
+          </div>
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label>Security Password</label>
+            <input type="password" id="pwd-pass" value="password123" class="form-control">
+          </div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="performPasswordAuth()">
+            <span>🔓</span> Log In with Credentials
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; font-size: 11px; color: #64748b;">
+        Protected by CitySync Government Unified Biometric Platform
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION SHELL -->
+  <div class="app-layout">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-badge">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <div class="brand-title" style="font-size: 18px; font-weight: 800; color: #fff;">CitySync</div>
+          <div style="font-size: 11px; color: #38bdf8; font-weight: 600;">Urban Smart Portal</div>
+        </div>
+      </div>
+
+      <div class="nav-group-title">Command Center</div>
+      <div class="nav-item active" onclick="navigateSection('overview')">
+        <span>🏙️</span> City Overview
+      </div>
+      <div class="nav-item" onclick="navigateSection('home-health')">
+        <span>🩺</span> Home Health (Personal AI)
+      </div>
+
+      <div class="nav-group-title">Civic & Emergency Services</div>
+      <div class="nav-item" onclick="navigateSection('city-complaints')">
+        <span>📝</span> File Road Complaint (Sahaya)
+      </div>
+      <div class="nav-item" onclick="navigateSection('city-flooding')">
+        <span>🌊</span> Road Flooding & Detour Routes
+      </div>
+      <div class="nav-item" onclick="navigateSection('city-govt')">
+        <span>🏛️</span> Government Offices
+      </div>
+      <div class="nav-item" onclick="navigateSection('city-pharmacy')">
+        <span>💊</span> 24x7 Pharmacies Near Me
+      </div>
+      <div class="nav-item" onclick="navigateSection('city-hospitals')">
+        <span>🏥</span> Hospitals & Doctors Radar
+      </div>
+      <div class="nav-item" onclick="navigateSection('city-traffic')">
+        <span>🚦</span> Traffic & Transit Corridors
+      </div>
+      <div class="nav-item" onclick="navigateSection('city-post')">
+        <span>📮</span> Post Offices
+      </div>
+
+      <div class="nav-group-title">Control Modes</div>
+      <div class="nav-item" onclick="toggleGestureControl()">
+        <span>🖐️</span> Hand Gestures (Fast / Pinch)
+      </div>
+
+      <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--card-border);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: 50%; background: #2563eb; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+            👤
+          </div>
+          <div style="overflow: hidden;">
+            <div id="user-display" style="font-size: 12px; font-weight: 700; color: #fff; text-overflow: ellipsis; white-space: nowrap;">Loading user...</div>
+            <div id="auth-mode-display" style="font-size: 10px; color: #10b981;">Biometric Session Active</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" style="width: 100%; justify-content: center; font-size: 11px; padding: 6px;" onclick="reopenAuth()">
+          <span>🔒</span> Switch User / Register
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN BODY -->
+    <main class="main-wrapper">
+      
+      <!-- TOP AI VOICE ASSISTANT STRIP (PRIORITY CONTROL) -->
+      <section class="top-ai-bar">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <button id="voice-trigger-btn" class="voice-btn-large" onclick="toggleVoiceAssistant()" title="Speak your requirement">
+            🎙️
+          </button>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #fff;">CitySync AI Voice Assistant</span>
+              <span class="pill-badge pill-b-green" id="voice-status-pill">Ready to Listen</span>
+            </div>
+            <div id="assistant-feedback" style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+              Speak: "I need to go to government office", "Find pharmacy near me", "There is flooding on my road", "File road complaint", "Open home health"
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <label style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Regional Language</label>
+            <select id="voice-lang-select" class="lang-select" onchange="onLanguageChange()">
+              <option value="en">English (India)</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+              <option value="kn">ಕನ್ನಡ (Kannada)</option>
+              <option value="te">తెలుగు (Telugu)</option>
+            </select>
+          </div>
+
+          <button class="btn btn-secondary" id="gesture-toggle-btn" onclick="toggleGestureControl()">
+            <span>🖐️</span> Gestures
+          </button>
+        </div>
+      </section>
+
+      <!-- SECTION 1: OVERVIEW -->
+      <section id="sec-overview" class="section-view active">
+        <div style="margin-bottom: 20px;">
+          <h1 style="font-size: 26px; margin-bottom: 4px;">Smart CitySync Command Nexus</h1>
+          <p style="color: var(--text-muted); font-size: 13px;">Integrated multi-modal urban command system: Single profile health vitals, civic complaints, and detour mapping.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="glass-panel" style="padding: 18px; cursor: pointer;" onclick="navigateSection('home-health')">
+            <div style="font-size: 24px; margin-bottom: 8px;">🩺</div>
+            <div style="font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #60a5fa;" id="ov-user-name">Personal Health</div>
+            <div style="font-weight: 600; font-size: 13px; margin-top: 4px;">Home Health & Faint Camera</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Automated beep to registered phone</div>
+          </div>
+          <div class="glass-panel" style="padding: 18px; cursor: pointer;" onclick="navigateSection('city-complaints')">
+            <div style="font-size: 24px; margin-bottom: 8px;">📝</div>
+            <div style="font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #f59e0b;" id="ov-complaint-count">2 Active</div>
+            <div style="font-weight: 600; font-size: 13px; margin-top: 4px;">Road & Civic Complaints</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">File pothole & service grievances</div>
+          </div>
+          <div class="glass-panel" style="padding: 18px; cursor: pointer;" onclick="navigateSection('city-flooding')">
+            <div style="font-size: 24px; margin-bottom: 8px;">🌊</div>
+            <div style="font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #ef4444;">2 Hotspots</div>
+            <div style="font-weight: 600; font-size: 13px; margin-top: 4px;">Flooded Roads & Detours</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Live mapping with alternate safe paths</div>
+          </div>
+          <div class="glass-panel" style="padding: 18px; cursor: pointer;" onclick="navigateSection('city-pharmacy')">
+            <div style="font-size: 24px; margin-bottom: 8px;">💊</div>
+            <div style="font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #10b981;">4 Nearby</div>
+            <div style="font-weight: 600; font-size: 13px; margin-top: 4px;">24x7 Pharmacies & Jan Aushadhi</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Direct stock & contact details</div>
+          </div>
+        </div>
+
+        <!-- Direct voice suggestion cards -->
+        <div class="glass-panel" style="padding: 22px;">
+          <h3 style="margin-bottom: 14px; font-size: 16px;">Try Saying to the Voice Assistant</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+            <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--card-border); cursor: pointer;" onclick="sendVoiceQuery('I need to go to government office')">
+              <strong style="color: #38bdf8; font-size: 13px;">"I need to go to the government office"</strong>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Navigates to Municipal BBMP/RTO centers with services</div>
+            </div>
+            <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--card-border); cursor: pointer;" onclick="sendVoiceQuery('I need to find a pharmacy near me')">
+              <strong style="color: #10b981; font-size: 13px;">"I need to find a pharmacy near me"</strong>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Shows 24-hr chemists and subsidized generic medicine centers</div>
+            </div>
+            <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--card-border); cursor: pointer;" onclick="sendVoiceQuery('There is flooding on my road')">
+              <strong style="color: #f97316; font-size: 13px;">"There is a flooding on my road"</strong>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Visualizes red waterlogged zones & safe green bypass routes</div>
+            </div>
+            <div style="background: rgba(15,23,42,0.6); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--card-border); cursor: pointer;" onclick="sendVoiceQuery('I need to file a road complaint')">
+              <strong style="color: #f59e0b; font-size: 13px;">"File a complaint about broken road"</strong>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Directs to Sahaya Civic Grievance submission form</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: HOME HEALTH (ONLY REGISTERED USER PROFILE + FAINTING CAMERA BEEP) -->
+      <section id="sec-home-health" class="section-view">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <h1 style="font-size: 26px; margin-bottom: 4px;">Home Health AI Care</h1>
+            <p style="color: var(--text-muted); font-size: 13px;">Personalized health record for the logged-in citizen with AI Faint/Fall Vision Guard.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="speakCurrentHealthProfile()">
+            <span>🔊</span> Read Aloud Vitals
+          </button>
+        </div>
+
+        <!-- Single Registered User Profile Card -->
+        <div id="single-user-profile-box" class="glass-panel" style="padding: 22px; margin-bottom: 24px;">
+          <!-- Dynamically populated with ONLY the registered user's details -->
+          <div style="text-align: center; color: var(--text-muted);">Loading your health records...</div>
+        </div>
+
+        <!-- FAINTING MOTION CAMERA WITH AUTO BEEP ALERT -->
+        <div class="faint-monitor-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">📷</span>
+                <h3 style="font-size: 16px; color: #fff;">AI Faint & Fall Motion Guardian Camera</h3>
+                <span class="pill-badge pill-b-red" id="faint-cam-badge">Armed & Monitoring</span>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                Watches for sudden vertical drop or prolonged inactivity. Immediately triggers an emergency sound beep and dispatches SMS alert to registered mobile: <strong id="faint-target-phone" style="color: #38bdf8;">--</strong>.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-danger" onclick="triggerSimulatedFaint('Manual Test Fall')">
+                <span>🚨</span> Simulate Faint / Fall
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div class="faint-video-wrapper">
+              <video id="faint-video" autoplay playsinline muted></video>
+              <canvas id="faint-motion-canvas" style="display: none;"></canvas>
+              
+              <!-- Red Emergency Overlay on Faint Detection -->
+              <div id="faint-alert-overlay" class="faint-alert-overlay">
+                <div style="font-size: 42px;">🚨</div>
+                <h2 style="font-size: 22px; font-weight: 800; margin-top: 4px;">FAINT / FALL DETECTED!</h2>
+                <p style="font-size: 13px; text-align: center; max-width: 80%; margin-top: 4px;">
+                  High decibel alarm sounding. Dispatching emergency beep to registered contact.
+                </p>
+                <button class="btn btn-secondary" style="margin-top: 14px; background: #fff; color: #000;" onclick="dismissFaintAlert()">
+                  Dismiss / I am OK
+                </button>
+              </div>
+            </div>
+
+            <div style="flex: 1; min-width: 260px;">
+              <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Guardian Status & Incident Logs</h4>
+              <div id="faint-log-box" style="background: #0f172a; border-radius: 10px; border: 1px solid var(--card-border); padding: 12px; max-height: 200px; overflow-y: auto; font-size: 12px; font-family: monospace;">
+                <div style="color: #10b981;">[SYSTEM INITIALIZED] Faint detection algorithm running at 30 fps.</div>
+                <div style="color: var(--text-muted);">[ACTIVE] Registered mobile number synced for automated distress SMS.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: FILE CIVIC / ROAD COMPLAINTS (SAHAYA) -->
+      <section id="sec-city-complaints" class="section-view">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <h1 style="font-size: 26px; margin-bottom: 4px;">Civic Grievance & Road Complaint Desk</h1>
+            <p style="color: var(--text-muted); font-size: 13px;">Direct reporting to Government Municipal Corporation (BBMP / PWD / Smart City Works).</p>
+          </div>
+          <a href="https://site.bbmp.gov.in" target="_blank" class="btn btn-secondary" style="text-decoration: none;">
+            <span>🌐</span> Open Official Portal
+          </a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+          <!-- Complaint Submission Form -->
+          <div class="glass-panel" style="padding: 22px;">
+            <h3 style="font-size: 16px; margin-bottom: 12px; color: #fff;">File a New Service or Road Issue</h3>
+            
+            <div class="form-group">
+              <label>Issue Category *</label>
+              <select id="cmp-category" class="form-control">
+                <option value="Dangerous Potholes & Broken Surface" selected>Dangerous Potholes & Broken Surface</option>
+                <option value="Road Waterlogging & Flooded Culvert">Road Waterlogging & Flooded Culvert</option>
+                <option value="Broken Streetlights & Electrical Pole">Broken Streetlights & Electrical Pole</option>
+                <option value="Water Pipeline Burst (BWSSB)">Water Pipeline Burst (BWSSB)</option>
+                <option value="Garbage Overflow & Sanitation">Garbage Overflow & Sanitation</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Exact Location / Landmark *</label>
+              <input type="text" id="cmp-location" class="form-control" placeholder="e.g. 100ft Road Near Metro Pillar 14" value="MG Road Trinity Junction">
+            </div>
+
+            <div class="form-group">
+              <label>Description of Damage / Risk *</label>
+              <textarea id="cmp-desc" class="form-control" rows="3" placeholder="Describe depth, hazard to two-wheelers, etc.">Large deep pothole on left lane causing severe vehicular slowing and risk of accidents.</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label>Complainant Name</label>
+                <input type="text" id="cmp-user" class="form-control" value="Ananya Rao">
+              </div>
+              <div class="form-group">
+                <label>Mobile Number for SMS Tracking</label>
+                <input type="tel" id="cmp-phone" class="form-control" value="+91 98450 12345">
+              </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px; padding: 11px;" onclick="submitComplaint()">
+              <span>🚀</span> Submit Complaint to Government Desk
+            </button>
+          </div>
+
+          <!-- Submitted Complaints Tracking List -->
+          <div>
+            <h3 style="font-size: 16px; margin-bottom: 12px; color: #fff;">Registered Grievance Records & Progress</h3>
+            <div id="complaints-list" style="display: flex; flex-direction: column; gap: 12px;">
+              <!-- Dynamically populated complaints -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: ROAD FLOODING & DETOUR ROUTES MAPPING -->
+      <section id="sec-city-flooding" class="section-view">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <h1 style="font-size: 26px; margin-bottom: 4px;">Flooded Roads & Safe Detour Routes</h1>
+            <p style="color: var(--text-muted); font-size: 13px;">Real-time waterlogging warnings with verified alternative paths on interactive GIS map.</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="resetFloodingMapView()">
+              <span>🎯</span> Center Map
+            </button>
+          </div>
+        </div>
+
+        <!-- FLOODING MAP -->
+        <div class="map-box" id="city-flooding-map"></div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+          <div class="pill-badge pill-b-red" style="font-size: 12px; padding: 6px 12px;">
+            🔴 Red Dashed Line: Flooded / Blocked Road Segment
+          </div>
+          <div class="pill-badge pill-b-green" style="font-size: 12px; padding: 6px 12px;">
+            🟢 Green Line: Safe Alternative Detour Route
+          </div>
+        </div>
+
+        <div id="flooding-cards-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+          <!-- Dynamically populated flooding cards -->
+        </div>
+      </section>
+
+      <!-- SECTION 5: GOVERNMENT OFFICES -->
+      <section id="sec-city-govt" class="section-view">
+        <div style="margin-bottom: 20px;">
+          <h1 style="font-size: 26px; margin-bottom: 4px;">Government & Municipal Administration Offices</h1>
+          <p style="color: var(--text-muted); font-size: 13px;">Find nearest civic headquarters, RTO, revenue departments, and operating hours.</p>
+        </div>
+
+        <div id="govt-offices-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- SECTION 6: 24x7 PHARMACIES -->
+      <section id="sec-city-pharmacy" class="section-view">
+        <div style="margin-bottom: 20px;">
+          <h1 style="font-size: 26px; margin-bottom: 4px;">Pharmacies & Jan Aushadhi Generic Stores</h1>
+          <p style="color: var(--text-muted); font-size: 13px;">Locate 24-hour dispensaries, emergency medicine stock, and subsidized drug centers.</p>
+        </div>
+
+        <div id="pharmacy-container" style="display: grid; grid-template-grid: repeat(auto-fit, minmax(320px, 1fr)); display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- SECTION 7: HOSPITALS & AYURMITRA DOCTOR DASHBOARD MAP -->
+      <section id="sec-city-hospitals" class="section-view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+          <div>
+            <h1 style="font-size: 26px; margin-bottom: 4px;">Hospitals & Urban Health Radar</h1>
+            <p style="color: var(--text-muted); font-size: 13px;">Ayurmitra interactive GIS with epidemic hotspots, ICU beds, and ambulance dispatch.</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" onclick="resetHospitalMapView()">
+              <span>🎯</span> Center Map
+            </button>
+            <a href="tel:108" class="btn btn-accent" style="text-decoration: none;">
+              <span>🚨</span> Ambulance (108)
+            </a>
+          </div>
+        </div>
+
+        <!-- LEAFLET MAP -->
+        <div class="map-box" id="city-hospital-map"></div>
+
+        <div class="glass-panel" style="padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <strong style="color: #ef4444; font-size: 14px;">🚨 Emergency Helpline:</strong>
+            <span style="color: #cbd5e1; margin-left: 8px; font-size: 13px;">Ambulance: <strong>108 / 102</strong> | Trauma: <strong>+91 80 2630 4008</strong> | Blood: <strong>1910</strong></span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span class="pill-badge pill-b-red">● High Risk Epidemic Circle</span>
+            <span class="pill-badge pill-b-amber">● Medium Risk</span>
+            <span class="pill-badge pill-b-blue">● Hospital Node</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <h3 style="margin-bottom: 12px; font-size: 16px;">Nearby Hospitals, ICU Status & Ambulance</h3>
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Hospital Name</th>
+                <th>Zone</th>
+                <th>Available Beds</th>
+                <th>ICU Status</th>
+                <th>Ambulance Hot-line</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="hospitals-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 8: TRAFFIC -->
+      <section id="sec-city-traffic" class="section-view">
+        <div style="margin-bottom: 20px;">
+          <h1 style="font-size: 26px; margin-bottom: 4px;">Live City Traffic Corridors</h1>
+          <p style="color: var(--text-muted); font-size: 13px;">Corridor speeds, choke points, and delay advisories.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;" id="traffic-container"></div>
+      </section>
+
+      <!-- SECTION 9: POST OFFICES -->
+      <section id="sec-city-post" class="section-view">
+        <div style="margin-bottom: 20px;">
+          <h1 style="font-size: 26px; margin-bottom: 4px;">City Post Offices & Aadhaar Seva</h1>
+          <p style="color: var(--text-muted); font-size: 13px;">Speed post, postal banking, and pincode locator.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;" id="post-offices-container"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ULTRA-RESPONSIVE GESTURE HUD (WEBCAM WITH REAL-TIME PINCH/ZOOM & SWIPE) -->
+  <div class="gesture-hud" id="gesture-hud">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <span style="font-size: 12px; font-weight: 700; color: #38bdf8;">🖐️ High-Speed Gesture Engine</span>
+      <button onclick="toggleGestureControl()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px;">✖</button>
+    </div>
+    <video id="gesture-video" autoplay playsinline muted></video>
+    <canvas id="gesture-canvas" width="160" height="120" style="display: none;"></canvas>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px;">
+      <span style="color: var(--text-muted);">Detected Action:</span>
+      <span id="detected-gesture" style="font-weight: 800; color: #10b981; font-size: 12px;">Monitoring...</span>
+    </div>
+
+    <!-- Quick Gesture Controls buttons for instant responsiveness -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px;">
+      <button class="btn btn-secondary" style="font-size: 10px; padding: 4px 6px; justify-content: center;" onclick="triggerManualGesture('swipe-left')" title="Previous section">◀ Prev</button>
+      <button class="btn btn-secondary" style="font-size: 10px; padding: 4px 6px; justify-content: center;" onclick="triggerManualGesture('swipe-right')" title="Next section">Next ▶</button>
+      <button class="btn btn-secondary" style="font-size: 10px; padding: 4px 6px; justify-content: center;" onclick="triggerManualGesture('pinch')" title="Zoom Out on Map">🔍- Out</button>
+      <button class="btn btn-secondary" style="font-size: 10px; padding: 4px 6px; justify-content: center;" onclick="triggerManualGesture('zoom')" title="Zoom In on Map">🔍+ In</button>
+    </div>
+
+    <div style="font-size: 9px; color: #64748b; margin-top: 6px;">
+      Fast optical motion loop: Hand wave switches pages; Pinch/Spread zooms GIS maps.
+    </div>
+  </div>
+
+  <!-- AUDIO BEEP GENERATOR ELEMENT -->
+  <audio id="beep-sound" preload="auto">
+    <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..." type="audio/wav">
+  </audio>
+
+  <!-- LEAFLET JS & MAIN SCRIPT -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/static/js/main.js"></script>
+</body>
+</html>

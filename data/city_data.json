@@ -1,0 +1,220 @@
+{
+  "hospitals": [
+    {
+      "id": "H1",
+      "name": "Apollo City Hospital & Trauma Center",
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "zone": "Central Zone",
+      "type": "Multi-Speciality",
+      "beds_available": 18,
+      "icu_available": 4,
+      "phone": "+91 80 2630 4000",
+      "ambulance": "108 / +91 80 2630 4008",
+      "emergency_status": "Operational",
+      "rating": 4.8,
+      "active_cases": 124
+    },
+    {
+      "id": "H2",
+      "name": "Fortis District Care Hospital",
+      "lat": 12.9352,
+      "lng": 77.6245,
+      "zone": "South Zone",
+      "type": "Super Speciality",
+      "beds_available": 9,
+      "icu_available": 2,
+      "phone": "+91 80 6621 4444",
+      "ambulance": "108 / +91 80 6621 4499",
+      "emergency_status": "High Alert",
+      "rating": 4.6,
+      "active_cases": 98
+    },
+    {
+      "id": "H3",
+      "name": "Manipal Urban Health Institute",
+      "lat": 12.9592,
+      "lng": 77.6568,
+      "zone": "East Zone",
+      "type": "General & Pediatric",
+      "beds_available": 26,
+      "icu_available": 7,
+      "phone": "+91 80 2502 4444",
+      "ambulance": "108 / +91 80 2502 4410",
+      "emergency_status": "Operational",
+      "rating": 4.7,
+      "active_cases": 86
+    },
+    {
+      "id": "H4",
+      "name": "Government Victoria & Bowring Hospital",
+      "lat": 12.9634,
+      "lng": 77.575,
+      "zone": "West Zone",
+      "type": "Government Civil Hospital",
+      "beds_available": 45,
+      "icu_available": 11,
+      "phone": "+91 80 2670 1150",
+      "ambulance": "102 / 108",
+      "emergency_status": "24x7 Free ER",
+      "rating": 4.3,
+      "active_cases": 210
+    },
+    {
+      "id": "H5",
+      "name": "Sakra World Emergency Wing",
+      "lat": 12.926,
+      "lng": 77.6833,
+      "zone": "Outer Ring Sector",
+      "type": "Emergency Care",
+      "beds_available": 14,
+      "icu_available": 5,
+      "phone": "+91 80 4969 4969",
+      "ambulance": "108 / +91 80 4969 4911",
+      "emergency_status": "Operational",
+      "rating": 4.9,
+      "active_cases": 73
+    }
+  ],
+  "epidemic_hotspots": [
+    {
+      "name": "Sector 4 \u2014 Gokak Lake Ward",
+      "lat": 12.978,
+      "lng": 77.601,
+      "disease": "Dengue",
+      "cases": 42,
+      "risk": "High",
+      "color": "#ef4444",
+      "radius": 850,
+      "advisory": "Fogging in progress. Avoid stagnant water exposure."
+    },
+    {
+      "name": "Old Town Commercial Basin",
+      "lat": 12.942,
+      "lng": 77.618,
+      "disease": "Seasonal Flu & Viral Fevers",
+      "cases": 29,
+      "risk": "Medium",
+      "color": "#f97316",
+      "radius": 650,
+      "advisory": "Mask advisories in crowded markets."
+    },
+    {
+      "name": "Greenwood South Extension",
+      "lat": 12.92,
+      "lng": 77.67,
+      "disease": "Gastroenteritis",
+      "cases": 13,
+      "risk": "Low",
+      "color": "#10b981",
+      "radius": 500,
+      "advisory": "Water pipeline testing verified normal."
+    }
+  ],
+  "traffic": [
+    {
+      "corridor": "Central Ring Road to MG Junction",
+      "status": "Heavy Congestion",
+      "speed": "14 km/h",
+      "delay": "+22 mins",
+      "cause": "Metro expansion & high evening peak",
+      "color": "#ef4444"
+    },
+    {
+      "corridor": "Airport Expressway \u2014 Hebbal Flyover",
+      "status": "Moderate Flow",
+      "speed": "48 km/h",
+      "delay": "+6 mins",
+      "cause": "Standard rush hour",
+      "color": "#f59e0b"
+    },
+    {
+      "corridor": "Tech Park Bypass \u2014 Outer Ring Road",
+      "status": "Slow Moving",
+      "speed": "22 km/h",
+      "delay": "+15 mins",
+      "cause": "Signal re-timing",
+      "color": "#f97316"
+    },
+    {
+      "corridor": "South Boulevard to Silk Board Link",
+      "status": "Clear / Smooth",
+      "speed": "55 km/h",
+      "delay": "Normal",
+      "cause": "Green corridor active",
+      "color": "#10b981"
+    }
+  ],
+  "post_offices": [
+    {
+      "name": "General Post Office (GPO) Central",
+      "pincode": "560001",
+      "address": "Raj Bhavan Road, Ambedkar Veedhi",
+      "timing": "09:00 AM - 07:00 PM",
+      "speed_post": true,
+      "passport_seva": true,
+      "phone": "+91 80 2286 4222",
+      "lat": 12.981,
+      "lng": 77.5925
+    },
+    {
+      "name": "South Head Post Office",
+      "pincode": "560011",
+      "address": "4th Block Jayanagar Market Square",
+      "timing": "09:30 AM - 05:30 PM",
+      "speed_post": true,
+      "passport_seva": false,
+      "phone": "+91 80 2663 1184",
+      "lat": 12.9298,
+      "lng": 77.5834
+    },
+    {
+      "name": "Indiranagar Sub Post Office",
+      "pincode": "560038",
+      "address": "100 Feet Road, HAL 2nd Stage",
+      "timing": "09:00 AM - 05:00 PM",
+      "speed_post": true,
+      "passport_seva": true,
+      "phone": "+91 80 2528 7171",
+      "lat": 12.9719,
+      "lng": 77.6412
+    },
+    {
+      "name": "Koramangala Post & Aadhaar Seva",
+      "pincode": "560034",
+      "address": "80 Feet Road, 6th Block",
+      "timing": "09:30 AM - 05:00 PM",
+      "speed_post": true,
+      "passport_seva": false,
+      "phone": "+91 80 2553 0920",
+      "lat": 12.9345,
+      "lng": 77.621
+    }
+  ],
+  "other_services": [
+    {
+      "category": "Water Supply & Drainage (BWSSB)",
+      "helpline": "1916 / +91 80 2223 8888",
+      "hours": "24x7 Grievance Redressal",
+      "status": "Normal Pressure across all Zones"
+    },
+    {
+      "category": "Electricity Board (BESCOM)",
+      "helpline": "1912 / +91 80 2287 3333",
+      "hours": "24x7 Power Faults & Restorations",
+      "status": "No Scheduled Outages"
+    },
+    {
+      "category": "Fire & Emergency Disaster Response",
+      "helpline": "101 / 112",
+      "hours": "Instant Emergency Dispatch",
+      "status": "12 Rapid Stations on Standby"
+    },
+    {
+      "category": "City Municipal Grievance & Sanitation",
+      "helpline": "1533 / +91 80 2266 0000",
+      "hours": "07:00 AM - 09:00 PM",
+      "status": "Automated Waste Collection Tracked"
+    }
+  ]
+}

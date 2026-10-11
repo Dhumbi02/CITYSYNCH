@@ -1,0 +1,24 @@
+[
+  {
+    "id": "CMP-2026-891",
+    "user_name": "Ananya Rao",
+    "phone": "+91 98450 12345",
+    "category": "Potholes & Broken Road Surface",
+    "location": "MG Road near Trinity Junction",
+    "description": "Deep dangerous pothole right in front of the bus stop causing near skids.",
+    "status": "In Progress (BBMP Team Dispatched)",
+    "priority": "High",
+    "date": "10 Oct 2026"
+  },
+  {
+    "id": "CMP-2026-892",
+    "user_name": "Citizen User",
+    "phone": "+91 98765 43210",
+    "category": "Streetlight Defect",
+    "location": "Indiranagar 100ft Road 4th Cross",
+    "description": "Streetlights not functioning for past 3 days, pitch dark corridor.",
+    "status": "Submitted",
+    "priority": "Medium",
+    "date": "11 Oct 2026"
+  }
+]
