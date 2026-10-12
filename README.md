@@ -1,2 +1,2 @@
-# SAHAYA
-An inclusive multilingual learning platform enabling accessible education through language , voice , visuals , touch , and gesture-based interaction.
+#CITYSYNCH
+AI-powered urban assistance and personal healthcare platform with civic services, pill tracking, emergency support, and gesture-based interaction.
