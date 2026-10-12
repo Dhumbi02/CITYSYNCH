@@ -216,5 +216,285 @@
       "hours": "07:00 AM - 09:00 PM",
       "status": "Automated Waste Collection Tracked"
     }
+  ],
+  "govt_offices": [
+    {
+      "id": "GOV-1",
+      "name": "Bangalore One Citizen Service Centre \u2014 MG Road",
+      "category": "Bangalore One",
+      "dept": "Directorate of Electronic Delivery of Citizen Services (EDCS)",
+      "lat": 12.9738,
+      "lng": 77.6095,
+      "address": "Metro Station Concourse, MG Road Boulevard, Bengaluru 560001",
+      "hours": "08:00 AM - 07:00 PM (All 7 Days)",
+      "services": "Electricity & Water Bill Payment, Property Tax, RTC/Pahani, Caste/Income Certificate, Bus Pass, Police Verification",
+      "phone": "+91 80 2295 5400",
+      "wait_time": "~10 mins",
+      "route_guide": "From Central MG Circle, proceed 250m East along MG Road Boulevard. Located on ground concourse near Exit A."
+    },
+    {
+      "id": "GOV-2",
+      "name": "Bangalore One Citizen Centre \u2014 Jayanagar 4th Block",
+      "category": "Bangalore One",
+      "dept": "EDCS Citizen Service Hub",
+      "lat": 12.9298,
+      "lng": 77.5835,
+      "address": "BDA Complex Ground Floor, 4th Block Jayanagar, Bengaluru 560011",
+      "hours": "08:00 AM - 07:00 PM",
+      "services": "BESCOM & BWSSB Bills, Aadhaar Card Services, Trade License, Senior Citizen Cards, Challan Payments",
+      "phone": "+91 80 2244 5566",
+      "wait_time": "~15 mins",
+      "route_guide": "Head South on 11th Main towards 4th Block BDA Complex. Entry via Main Gate West."
+    },
+    {
+      "id": "GOV-3",
+      "name": "Bangalore One Centre \u2014 Koramangala 6th Block",
+      "category": "Bangalore One",
+      "dept": "EDCS Citizen Service Hub",
+      "lat": 12.9348,
+      "lng": 77.6215,
+      "address": "BBMP Ward Office Complex, 80 Feet Road, 6th Block Koramangala, Bengaluru 560095",
+      "hours": "08:00 AM - 07:00 PM",
+      "services": "Municipal taxes, Water/Power payments, Birth/Death certificates, Ration card enrollment",
+      "phone": "+91 80 2553 4411",
+      "wait_time": "~12 mins",
+      "route_guide": "Take 80 Feet Road towards Sony World Junction. Complex is situated directly opposite 6th Block Park."
+    },
+    {
+      "id": "GOV-4",
+      "name": "UIDAI Aadhaar Seva Kendra (ASK) \u2014 Indiranagar",
+      "category": "Aadhaar Seva Kendra",
+      "dept": "Unique Identification Authority of India (UIDAI)",
+      "lat": 12.9719,
+      "lng": 77.6412,
+      "address": "100 Feet Road, Near Domlur Flyover Junction, Indiranagar, Bengaluru 560038",
+      "hours": "09:30 AM - 05:30 PM (Closed Tuesday)",
+      "services": "Fresh Aadhaar Enrolment, Biometric Update (Fingerprint/Iris/Photo), Mobile Number Link, Name/Address Change, Child Biometrics",
+      "phone": "1947 / +91 80 2528 7180",
+      "wait_time": "~20 mins (Token system)",
+      "route_guide": "From Old Airport Road, turn onto 100 Feet Road. Located 150m from Domlur Flyover on the service lane."
+    },
+    {
+      "id": "GOV-5",
+      "name": "Aadhaar Seva Kendra (ASK) \u2014 South Bengaluru Central",
+      "category": "Aadhaar Seva Kendra",
+      "dept": "UIDAI Regional Operations",
+      "lat": 12.918,
+      "lng": 77.5925,
+      "address": "3rd Floor, Manipal Centre Wing, Bannerghatta Main Road, Bengaluru 560076",
+      "hours": "09:00 AM - 05:30 PM (Mon-Sat)",
+      "services": "New Aadhaar Registration, Mandatory Biometric Update at Age 5 & 15, Document Revalidation, PVC Card Orders",
+      "phone": "1947 / +91 80 2658 9011",
+      "wait_time": "~15 mins",
+      "route_guide": "Follow Bannerghatta Main Road South towards Dairy Circle. Facility is on the 3rd floor with basement parking."
+    },
+    {
+      "id": "GOV-6",
+      "name": "Bruhat Bengaluru Mahanagara Palike (BBMP) Head Office",
+      "category": "Municipal Head Office",
+      "dept": "Municipal & Civic Administration",
+      "lat": 12.9698,
+      "lng": 77.5878,
+      "address": "NR Square, Corporation Circle, Bengaluru 560002",
+      "hours": "10:00 AM - 05:30 PM (Mon-Sat)",
+      "services": "Civic grievance escalations, Khata Registration, Property Tax disputes, Town Planning & Public Works",
+      "phone": "+91 80 2222 1188",
+      "wait_time": "~25 mins",
+      "route_guide": "Take Kasturba Road onto Corporation Circle. Main gateway faces Hudson Memorial Church."
+    },
+    {
+      "id": "GOV-7",
+      "name": "Bengaluru Urban Deputy Commissioner & Revenue Office",
+      "category": "District Administration",
+      "dept": "Revenue, Land & District Administration",
+      "lat": 12.9772,
+      "lng": 77.5896,
+      "address": "Kandaya Bhavan, KG Road, Gandhi Nagar, Bengaluru 560009",
+      "hours": "10:00 AM - 05:00 PM",
+      "services": "Caste & Income Certificates, RTC Bhoomi Land records, Domicile verification, Voter ID registration",
+      "phone": "+91 80 2221 1101",
+      "wait_time": "~30 mins",
+      "route_guide": "Head north from Mysore Bank Circle up KG Road for 300m. Kandaya Bhavan is on the left wing."
+    },
+    {
+      "id": "GOV-8",
+      "name": "Regional Transport Office (RTO) Central \u2014 Jayanagar",
+      "category": "RTO Transport",
+      "dept": "Karnataka Transport Department",
+      "lat": 12.934,
+      "lng": 77.595,
+      "address": "Bayanagappa Compound, 8th Block Jayanagar, Bengaluru 560082",
+      "hours": "10:00 AM - 04:30 PM",
+      "services": "Learner's & Driving License (Sarathi), Vehicle Registration (Vahan), Fitness Certificate, Road Tax",
+      "phone": "+91 80 2656 1234",
+      "wait_time": "~25 mins",
+      "route_guide": "Proceed along 8th Block main road. Test track and vehicle inspection bay on the east gate."
+    }
+  ],
+  "pharmacies": [
+    {
+      "id": "PH-1",
+      "name": "Apollo 24x7 Pharmacy & Critical Care",
+      "lat": 12.973,
+      "lng": 77.598,
+      "address": "Richmond Circle, Residency Rd, Shantala Nagar, Bengaluru 560025",
+      "phone": "+91 80 2222 3456",
+      "timing": "24 Hours Open (24x7)",
+      "home_delivery": true,
+      "delivery_time": "25-35 mins",
+      "stock": "Cardiac, Insulin, Antibiotics, Asthma Inhalers, Dengue NS1 & Emergency Serums",
+      "rating": 4.9,
+      "verified_24x7": true
+    },
+    {
+      "id": "PH-2",
+      "name": "MedPlus 24x7 Day & Night Pharmacy",
+      "lat": 12.937,
+      "lng": 77.62,
+      "address": "80 Feet Road, 5th Block Koramangala, Bengaluru 560095",
+      "phone": "+91 80 4455 6677",
+      "timing": "24 Hours Open (24x7)",
+      "home_delivery": true,
+      "delivery_time": "30-40 mins",
+      "stock": "Full Generic line, Chronic condition refills, BP/Sugar Monitors, Surgical supplies",
+      "rating": 4.7,
+      "verified_24x7": true
+    },
+    {
+      "id": "PH-3",
+      "name": "Government Pradhan Mantri Jan Aushadhi Kendra (24x7 ER)",
+      "lat": 12.965,
+      "lng": 77.58,
+      "address": "Victoria Hospital Complex, Fort Road, KR Market, Bengaluru 560002",
+      "phone": "+91 80 2670 8900",
+      "timing": "24 Hours Open (Government 24x7 Counter)",
+      "home_delivery": true,
+      "delivery_time": "40-50 mins",
+      "stock": "Subsidized 80% Off Essential Generic Formulations, Jan Aushadhi Kits, Dialysis kits",
+      "rating": 4.8,
+      "verified_24x7": true
+    },
+    {
+      "id": "PH-4",
+      "name": "Wellness Forever 24-Hour Chemist & Life Care",
+      "lat": 12.962,
+      "lng": 77.648,
+      "address": "CMH Road, Near Metro Station, Indiranagar, Bengaluru 560038",
+      "phone": "+91 80 2521 9900",
+      "timing": "24 Hours Open (24x7)",
+      "home_delivery": true,
+      "delivery_time": "20-30 mins",
+      "stock": "Portable Medical Oxygen, Nebulizers, Pediatric syrups, Ice-pack Vaccines, IV Fluids",
+      "rating": 4.9,
+      "verified_24x7": true
+    },
+    {
+      "id": "PH-5",
+      "name": "Trust Chemists & 24x7 Druggist Hub",
+      "lat": 12.929,
+      "lng": 77.584,
+      "address": "11th Main Rd, 4th Block Jayanagar, Bengaluru 560011",
+      "phone": "+91 80 2244 8899",
+      "timing": "24 Hours Open (24x7)",
+      "home_delivery": true,
+      "delivery_time": "25-35 mins",
+      "stock": "High-end Oncology drugs, Transplant immunosuppressants, Insulin Pens, Blood Thinners",
+      "rating": 4.8,
+      "verified_24x7": true
+    },
+    {
+      "id": "PH-6",
+      "name": "Noble Medical 24x7 Super Pharmacy",
+      "lat": 12.986,
+      "lng": 77.599,
+      "address": "Vasanth Nagar, Near Cantonment Railway Station, Bengaluru 560052",
+      "phone": "+91 80 2226 7711",
+      "timing": "24 Hours Open (24x7)",
+      "home_delivery": true,
+      "delivery_time": "30-45 mins",
+      "stock": "Ortho braces, Fever/Analgesics, Emergency burn care, Antivenom & Post-exposure kits",
+      "rating": 4.6,
+      "verified_24x7": true
+    }
+  ],
+  "flooding_routes": [
+    {
+      "id": "FLD-1",
+      "road_name": "Silk Board Underpass & Junction",
+      "lat": 12.9176,
+      "lng": 77.6234,
+      "flood_level": "Deep Waterlogging (2.5 ft)",
+      "status": "Blocked / Avoid Road",
+      "alternate_route": "Bypass via BTM 2nd Stage 16th Main -> Outer Ring Flyover",
+      "safe_coordinates": [
+        [
+          12.91,
+          77.615
+        ],
+        [
+          12.915,
+          77.62
+        ],
+        [
+          12.925,
+          77.63
+        ],
+        [
+          12.93,
+          77.64
+        ]
+      ],
+      "blocked_coordinates": [
+        [
+          12.916,
+          77.622
+        ],
+        [
+          12.9176,
+          77.6234
+        ],
+        [
+          12.919,
+          77.625
+        ]
+      ]
+    },
+    {
+      "id": "FLD-2",
+      "road_name": "Hebbal Lake Overflow Service Corridor",
+      "lat": 13.0358,
+      "lng": 77.597,
+      "flood_level": "Waterlogged (1.8 ft)",
+      "status": "Slow / Diverted",
+      "alternate_route": "Use Main Elevated Flyover or Ring Road Kodigehalli Underpass",
+      "safe_coordinates": [
+        [
+          13.025,
+          77.592
+        ],
+        [
+          13.032,
+          77.594
+        ],
+        [
+          13.042,
+          77.598
+        ]
+      ],
+      "blocked_coordinates": [
+        [
+          13.034,
+          77.596
+        ],
+        [
+          13.0358,
+          77.597
+        ],
+        [
+          13.038,
+          77.5985
+        ]
+      ]
+    }
   ]
 }

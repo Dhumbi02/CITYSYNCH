@@ -7,6 +7,8 @@ let hospitalMap = null;
 let hospitalMarkersLayer = null;
 let floodingMap = null;
 let floodingLayersGroup = null;
+let govtMap = null;
+let govtMarkersLayer = null;
 
 let currentLanguage = 'en';
 let isListening = false;
@@ -1167,6 +1169,12 @@ async function toggleGestureControl() {
   }
 }
 
+function getActiveMap() {
+  if (currentSection === 'city-flooding' && floodingMap) return floodingMap;
+  if (currentSection === 'city-hospitals' && hospitalMap) return hospitalMap;
+  return null;
+}
+
 function triggerManualGesture(action) {
   const badge = document.getElementById('detected-gesture');
   if (action === 'swipe-right') {
@@ -1174,161 +1182,253 @@ function triggerManualGesture(action) {
     let idx = SECTIONS.indexOf(currentSection);
     idx = (idx + 1) % SECTIONS.length;
     navigateSection(SECTIONS[idx]);
-    speakText(`Switching to ${SECTIONS[idx].replace('-', ' ')}`);
   } else if (action === 'swipe-left') {
     if (badge) badge.innerText = '◀ Prev Screen';
     let idx = SECTIONS.indexOf(currentSection);
     idx = (idx - 1 + SECTIONS.length) % SECTIONS.length;
     navigateSection(SECTIONS[idx]);
-    speakText(`Switching to ${SECTIONS[idx].replace('-', ' ')}`);
   } else if (action === 'zoom') {
-    if (badge) badge.innerText = '🔍 Zoom In (+)';
-    // If not currently on map section, auto-navigate to hospitals map first!
-    if (currentSection !== 'city-hospitals' && currentSection !== 'city-flooding') {
+    if (badge) badge.innerText = '🔍 Zooming In (+)';
+    let targetMap = getActiveMap();
+    if (!targetMap) {
       navigateSection('city-hospitals');
+      targetMap = hospitalMap;
     }
-    setTimeout(() => {
-      if (currentSection === 'city-hospitals' && hospitalMap) {
-        hospitalMap.setZoom(hospitalMap.getZoom() + 1);
-      } else if (currentSection === 'city-flooding' && floodingMap) {
-        floodingMap.setZoom(floodingMap.getZoom() + 1);
+    if (targetMap) {
+      const curr = targetMap.getZoom();
+      if (curr < targetMap.getMaxZoom()) {
+        targetMap.zoomIn(1, { animate: true });
       }
-    }, 100);
+    }
   } else if (action === 'pinch') {
-    if (badge) badge.innerText = '🔍 Zoom Out (-)';
-    if (currentSection !== 'city-hospitals' && currentSection !== 'city-flooding') {
+    if (badge) badge.innerText = '🔍 Zooming Out (-)';
+    let targetMap = getActiveMap();
+    if (!targetMap) {
       navigateSection('city-hospitals');
+      targetMap = hospitalMap;
     }
-    setTimeout(() => {
-      if (currentSection === 'city-hospitals' && hospitalMap) {
-        hospitalMap.setZoom(hospitalMap.getZoom() - 1);
-      } else if (currentSection === 'city-flooding' && floodingMap) {
-        floodingMap.setZoom(floodingMap.getZoom() - 1);
+    if (targetMap) {
+      const curr = targetMap.getZoom();
+      if (curr > targetMap.getMinZoom()) {
+        targetMap.zoomOut(1, { animate: true });
       }
-    }, 100);
+    }
   }
 }
 
-// 108-POINT OPTICAL FLOW VECTOR GESTURE ENGINE
+// HIGH-PRECISION REAL-TIME HAND GESTURE & PINCH/ZOOM ENGINE
 function startRealtimeGestureLoop() {
   const video = document.getElementById('gesture-video');
   const skeletonCanvas = document.getElementById('gesture-skeleton-canvas');
   if (!video || !skeletonCanvas) return;
   const sCtx = skeletonCanvas.getContext('2d');
 
-  let prevPixels = null;
-  let prevCentroidX = null;
-  let prevCentroidY = null;
-  let prevMotionArea = null;
+  // Fast analysis canvas (80x60 gives sharp hand distinction without lag)
+  const offCanvas = document.createElement('canvas');
+  const PROC_W = 80;
+  const PROC_H = 60;
+  offCanvas.width = PROC_W;
+  offCanvas.height = PROC_H;
+  const oCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+  // Tracking history buffer
+  const history = [];
+  const HISTORY_LEN = 8;
+  let lastPinchZoomTime = 0;
+  let baselineHandSpan = null;
+  let baselineHandArea = null;
 
   function analyzeMotion() {
     if (!gestureActive) return;
 
-    if (video.videoWidth > 0) {
+    if (video.videoWidth > 0 && !video.paused) {
       const gw = skeletonCanvas.width = 280;
       const gh = skeletonCanvas.height = 160;
       sCtx.clearRect(0, 0, gw, gh);
 
-      // Render 108 points anatomical mesh on gesture viewfinder (12 cols x 9 rows = 108 points)
+      try {
+        oCtx.drawImage(video, 0, 0, PROC_W, PROC_H);
+      } catch (e) {
+        gestureLoopId = requestAnimationFrame(analyzeMotion);
+        return;
+      }
+
+      const imgData = oCtx.getImageData(0, 0, PROC_W, PROC_H);
+      const data = imgData.data;
+
+      // Identify hand pixels via robust normalized RGB skin-tone threshold
+      let handPixelCount = 0;
+      let sumX = 0;
+      let sumY = 0;
+      let minX = PROC_W, maxX = 0, minY = PROC_H, maxY = 0;
+
+      for (let y = 0; y < PROC_H; y++) {
+        for (let x = 0; x < PROC_W; x++) {
+          const idx = (y * PROC_W + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+
+          // Normalized skin detector (works in diverse light)
+          const sum = r + g + b;
+          let isHand = false;
+          if (sum > 60) {
+            const nr = r / sum;
+            const ng = g / sum;
+            if (nr > 0.35 && nr < 0.62 && ng > 0.24 && ng < 0.38 && r > g && g > b) {
+              isHand = true;
+            }
+          }
+
+          if (isHand) {
+            handPixelCount++;
+            sumX += x;
+            sumY += y;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      // 108 Points Anatomical Mesh (12 x 9 grid)
       const gCols = 12;
       const gRows = 9;
       const gxStep = gw / (gCols + 1);
       const gyStep = gh / (gRows + 1);
 
-      // Offscreen thumbnail for optical vector calculation
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = 56;
-      offCanvas.height = 32;
-      const oCtx = offCanvas.getContext('2d');
-      oCtx.drawImage(video, 0, 0, 56, 32);
-      const currentPixels = oCtx.getImageData(0, 0, 56, 32).data;
-
-      // Draw 108 points on gesture canvas
-      sCtx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      sCtx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
       sCtx.lineWidth = 1;
 
-      let gActivePoints = 0;
       for (let r = 1; r <= gRows; r++) {
         for (let c = 1; c <= gCols; c++) {
           const ptX = c * gxStep;
           const ptY = r * gyStep;
-          const smX = Math.floor((ptX / gw) * 56);
-          const smY = Math.floor((ptY / gh) * 32);
-          const idx = (smY * 56 + smX) * 4;
-          const isAct = (currentPixels[idx] + currentPixels[idx+1] + currentPixels[idx+2]) / 3 > 35;
-          if (isAct) gActivePoints++;
+          const smX = Math.floor((ptX / gw) * PROC_W);
+          const smY = Math.floor((ptY / gh) * PROC_H);
+          const idx = (smY * PROC_W + smX) * 4;
+          const rVal = data[idx], gVal = data[idx + 1], bVal = data[idx + 2];
+          const smSum = rVal + gVal + bVal;
+          const nr = smSum > 0 ? rVal / smSum : 0;
+          const ng = smSum > 0 ? gVal / smSum : 0;
+          const inHand = smSum > 60 && nr > 0.35 && nr < 0.62 && ng > 0.24 && ng < 0.38;
 
           sCtx.beginPath();
-          sCtx.arc(ptX, ptY, isAct ? 3 : 1.5, 0, 2 * Math.PI);
-          sCtx.fillStyle = isAct ? '#10b981' : 'rgba(100, 116, 139, 0.4)';
+          sCtx.arc(ptX, ptY, inHand ? 3.5 : 1.5, 0, 2 * Math.PI);
+          sCtx.fillStyle = inHand ? '#38bdf8' : 'rgba(100, 116, 139, 0.35)';
           sCtx.fill();
         }
       }
 
-      if (prevPixels && !gestureCooldown) {
-        let totalMoved = 0;
-        let sumX = 0;
-        let sumY = 0;
+      // Hand Detection Threshold (> 40 pixels clearly visible hand)
+      if (handPixelCount > 40) {
+        const centroidX = sumX / handPixelCount;
+        const centroidY = sumY / handPixelCount;
+        const handWidth = maxX - minX;
+        const handHeight = maxY - minY;
+        const span = Math.hypot(handWidth, handHeight);
 
-        for (let y = 0; y < 32; y++) {
-          for (let x = 0; x < 56; x++) {
-            const idx = (y * 56 + x) * 4;
-            const diff = Math.abs(currentPixels[idx] - prevPixels[idx]) +
-                         Math.abs(currentPixels[idx+1] - prevPixels[idx+1]) +
-                         Math.abs(currentPixels[idx+2] - prevPixels[idx+2]);
-            if (diff > 40) {
-              totalMoved++;
-              sumX += x;
-              sumY += y;
-            }
-          }
+        // Screen coords: displayX = gw - (centroidX / PROC_W) * gw (mirror)
+        const dispX = gw - (centroidX / PROC_W) * gw;
+        const dispY = (centroidY / PROC_H) * gh;
+        const dispW = (handWidth / PROC_W) * gw;
+        const dispH = (handHeight / PROC_H) * gh;
+
+        // Draw HUD hand target & bounding box
+        sCtx.strokeStyle = '#10b981';
+        sCtx.lineWidth = 1.5;
+        sCtx.strokeRect(gw - (maxX / PROC_W) * gw, (minY / PROC_H) * gh, dispW, dispH);
+
+        sCtx.beginPath();
+        sCtx.arc(dispX, dispY, 5, 0, 2 * Math.PI);
+        sCtx.fillStyle = '#10b981';
+        sCtx.fill();
+
+        // Visual indicator on HUD for pinch/spread state
+        const isMapActive = (currentSection === 'city-flooding' || currentSection === 'city-hospitals');
+        if (isMapActive) {
+          sCtx.fillStyle = '#f59e0b';
+          sCtx.font = '10px monospace';
+          sCtx.fillText('🗺️ MAP ZOOM READY', 8, gh - 8);
         }
 
-        // Active hand gesture presence (Responsive threshold: > 25 delta pixels)
-        if (totalMoved > 25) {
-          const centroidX = sumX / totalMoved;
-          const centroidY = sumY / totalMoved;
-
-          if (prevCentroidX !== null && prevMotionArea !== null) {
-            const deltaX = centroidX - prevCentroidX;
-            const deltaY = centroidY - prevCentroidY;
-            const areaScaleRatio = totalMoved / Math.max(prevMotionArea, 1);
-
-            // 1. PINCH / ZOOM OUT: Hand pulling back or contracting
-            if (areaScaleRatio < 0.72 && prevMotionArea > 50) {
-              gestureCooldown = true;
-              triggerManualGesture('pinch');
-              resetCooldown(350);
-            }
-            // 2. SPREAD / ZOOM IN: Hand advancing or spreading outward
-            else if (areaScaleRatio > 1.38 && totalMoved > 55) {
-              gestureCooldown = true;
-              triggerManualGesture('zoom');
-              resetCooldown(350);
-            }
-            // 3. SWIPE RIGHT: Hand moving right across video
-            else if (deltaX > 2.8) {
-              gestureCooldown = true;
-              triggerManualGesture('swipe-right');
-              resetCooldown(380);
-            }
-            // 4. SWIPE LEFT: Hand moving left across video
-            else if (deltaX < -2.8) {
-              gestureCooldown = true;
-              triggerManualGesture('swipe-left');
-              resetCooldown(380);
-            }
-          }
-
-          prevCentroidX = centroidX;
-          prevCentroidY = centroidY;
-          prevMotionArea = totalMoved;
+        // Baseline smoothing for pinch zoom
+        if (baselineHandSpan === null) {
+          baselineHandSpan = span;
+          baselineHandArea = handPixelCount;
         } else {
-          prevCentroidX = null;
-          prevMotionArea = null;
+          baselineHandSpan = baselineHandSpan * 0.85 + span * 0.15;
+          baselineHandArea = baselineHandArea * 0.85 + handPixelCount * 0.15;
         }
+
+        const now = performance.now();
+
+        // Push to motion history (stores mirrored screen position)
+        history.push({
+          x: dispX,
+          y: dispY,
+          span: span,
+          area: handPixelCount,
+          time: now
+        });
+        if (history.length > HISTORY_LEN) history.shift();
+
+        // Evaluation
+        if (history.length >= 3) {
+          const newest = history[history.length - 1];
+          const oldest = history[0];
+          const dt = (newest.time - oldest.time) || 1;
+          const dx = newest.x - oldest.x; // Positive = moving right in user's physical view
+          const dy = newest.y - oldest.y;
+          const vx = dx / (dt / 1000); // pixels/sec velocity
+          const spanRatio = newest.span / Math.max(oldest.span, 1);
+          const areaRatio = newest.area / Math.max(oldest.area, 1);
+
+          // Dynamic thresholds: When on a map, prioritize zoom responsiveness
+          const zoomCooldownMs = isMapActive ? 250 : 320;
+          const pinchThresh = isMapActive ? 0.82 : 0.76;
+          const spreadThresh = isMapActive ? 1.22 : 1.30;
+          const timeSinceZoom = now - lastPinchZoomTime;
+
+          // 1. PINCH & ZOOM RECOGNITION
+          // Trigger whenever hand pitches/contracts (pinch) or expands/spreads (zoom)
+          if (timeSinceZoom > zoomCooldownMs && Math.abs(dx) < 26) {
+            // Pinch / hand contracting -> Zoom Out
+            if (spanRatio < pinchThresh || areaRatio < 0.75) {
+              lastPinchZoomTime = now;
+              triggerManualGesture('pinch');
+              history.length = 0;
+            }
+            // Spread / hand opening / advancing -> Zoom In
+            else if (spanRatio > spreadThresh || areaRatio > 1.30) {
+              lastPinchZoomTime = now;
+              triggerManualGesture('zoom');
+              history.length = 0;
+            }
+          }
+
+          // 2. IMMEDIATE SWIPE LEFT / RIGHT DETECTION
+          // Triggers horizontally without interfering with pitch/zoom
+          if (!gestureCooldown && (now - lastPinchZoomTime > 220)) {
+            if (Math.abs(dx) > 26 && Math.abs(vx) > 110 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+              gestureCooldown = true;
+              if (dx > 0) {
+                triggerManualGesture('swipe-right');
+              } else {
+                triggerManualGesture('swipe-left');
+              }
+              history.length = 0;
+              resetCooldown(260);
+            }
+          }
+        }
+      } else {
+        // Hand removed from view, reset tracking
+        baselineHandSpan = null;
+        baselineHandArea = null;
+        if (history.length > 0) history.shift();
       }
-      prevPixels = currentPixels;
     }
 
     gestureLoopId = requestAnimationFrame(analyzeMotion);
